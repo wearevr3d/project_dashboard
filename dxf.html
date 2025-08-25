@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DXF Viewer</title>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #viewer { width: 100%; height: 100%; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+
+  <!-- DXF Parser + Renderer -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.0.0/dist/dxf-parser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-dxf@0.0.17/dist/three-dxf.min.js"></script>
+
+  <script>
+    async function loadDXF() {
+      try {
+        const response = await fetch('DXF_file.dxf');
+        const text = await response.text();
+
+        const parser = new window.DxfParser();
+        const dxf = parser.parseSync(text);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('viewer').appendChild(renderer.domElement);
+
+        new window.ThreeDxf.Viewer(dxf, renderer, camera, scene);
+        camera.position.z = 100;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          renderer.render(scene, camera);
+        }
+        animate();
+      } catch (e) {
+        console.error("Error loading DXF file", e);
+      }
+    }
+    loadDXF();
+  </script>
+</body>
+</html>
+
