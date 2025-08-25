@@ -1,104 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>3D & Docs Dashboard</title>
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; display: flex; }
-    #leftPanel { flex: 2; border-right: 1px solid #ccc; }
-    #rightPanel { flex: 1; display: flex; flex-direction: column; }
-    iframe { width: 100%; height: 100%; border: none; }
-    #toolbar { background: #f5f5f5; padding: 5px; display: flex; gap: 10px; }
-    #toolbar button { padding: 5px 10px; cursor: pointer; }
-    #viewer { flex: 1; }
-    #empty { display: flex; align-items: center; justify-content: center; flex: 1; font-style: italic; color: #888; }
-  </style>
+<meta charset="UTF-8">
+<title>3D & Docs Dashboard</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+  #container { display: flex; height: 100vh; width: 100vw; }
+  #leftPanel, #rightPanel { flex-grow: 1; overflow: hidden; height: 100%; }
+  #divider {
+    width: 5px; cursor: ew-resize; background-color: #ccc; z-index: 10;
+  }
+  iframe { width: 100%; height: 100%; border: none; }
+  #toolbar { background: #f5f5f5; padding: 5px; display: flex; gap: 10px; }
+  #viewer { flex: 1; }
+  #empty { display: flex; align-items: center; justify-content: center; flex: 1; font-style: italic; color: #888; }
+</style>
 </head>
 <body>
-  <!-- Left panel (Virtual Tour / External Models) -->
+
+<div id="container">
   <div id="leftPanel">
     <iframe id="vtFrame"></iframe>
   </div>
 
-  <!-- Right panel (BIM, PDF, DXF) -->
+  <div id="divider"></div>
+
   <div id="rightPanel">
     <div id="toolbar"></div>
     <div id="viewer"><div id="empty">No add-ons yet</div></div>
   </div>
+</div>
 
-  <script>
-    // Utility: check if file exists
-    async function fileExists(url) {
-      try {
-        const res = await fetch(url, { method: 'HEAD' });
-        return res.ok;
-      } catch {
-        return false;
-      }
+<script>
+  // ----------------- Resizable divider -----------------
+  const divider = document.getElementById('divider');
+  const leftPanel = document.getElementById('leftPanel');
+  const rightPanel = document.getElementById('rightPanel');
+
+  let isDragging = false;
+
+  divider.addEventListener('mousedown', (e) => { isDragging = true; });
+  window.addEventListener('mouseup', (e) => { isDragging = false; });
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const totalWidth = window.innerWidth;
+    const leftWidth = e.clientX;
+    const rightWidth = totalWidth - leftWidth - divider.offsetWidth;
+    leftPanel.style.flex = '0 0 ' + leftWidth + 'px';
+    rightPanel.style.flex = '0 0 ' + rightWidth + 'px';
+  });
+
+  // ----------------- Dashboard logic -----------------
+  async function fileExists(url) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      return res.ok;
+    } catch { return false; }
+  }
+
+  async function init() {
+    const toolbar = document.getElementById("toolbar");
+    const viewer = document.getElementById("viewer");
+    const empty = document.getElementById("empty");
+
+    // Load Virtual Tour
+    const vtText = await fetch("vt_link.txt").then(r=>r.text()).catch(()=>"");
+    if (vtText.trim()) document.getElementById("vtFrame").src = vtText.trim();
+    else document.getElementById("vtFrame").srcdoc = "<p style='text-align:center;margin-top:20px;'>No Virtual Tour</p>";
+
+    let added = false;
+
+    // IFC
+    if(await fileExists("BIM_file.ifc")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open IFC";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="ifc.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
     }
 
-    async function init() {
-      const toolbar = document.getElementById("toolbar");
-      const viewer = document.getElementById("viewer");
-      const empty = document.getElementById("empty");
-
-      // Load Virtual Tour (from vt_link.txt)
-      const vtText = await fetch("vt_link.txt").then(r => r.text()).catch(() => "");
-      if (vtText.trim()) {
-        document.getElementById("vtFrame").src = vtText.trim();
-      } else {
-        document.getElementById("vtFrame").srcdoc = "<p style='text-align:center;margin-top:20px;'>No Virtual Tour</p>";
-      }
-
-      let added = false;
-
-      // IFC
-      if (await fileExists("BIM_file.ifc")) {
-        const btn = document.createElement("button");
-        btn.textContent = "Open IFC";
-        btn.onclick = () => viewer.innerHTML = '<iframe src="ifc.html"></iframe>';
-        toolbar.appendChild(btn);
-        added = true;
-      }
-
-      // PDF
-      if (await fileExists("DOC_file.pdf")) {
-        const btn = document.createElement("button");
-        btn.textContent = "Open PDF";
-        btn.onclick = () => viewer.innerHTML = '<iframe src="pdf.html"></iframe>';
-        toolbar.appendChild(btn);
-        added = true;
-      }
-
-      // DXF
-      if (await fileExists("DXF_file.dxf")) {
-        const btn = document.createElement("button");
-        btn.textContent = "Open DXF";
-        btn.onclick = () => viewer.innerHTML = '<iframe src="dxf.html"></iframe>';
-        toolbar.appendChild(btn);
-        added = true;
-      }
-
-      // External model link (Sketchfab, Autodesk)
-      const modelText = await fetch("model_link.txt").then(r => r.text()).catch(() => "");
-      if (modelText.trim()) {
-        const btn = document.createElement("button");
-        btn.textContent = "External Model";
-        btn.onclick = () => viewer.innerHTML = `<iframe src="${modelText.trim()}"></iframe>`;
-        toolbar.appendChild(btn);
-        added = true;
-      }
-
-      // If no add-ons
-      if (!added) {
-        toolbar.style.display = "none";
-      } else {
-        empty.style.display = "none";
-      }
+    // PDF
+    if(await fileExists("DOC_file.pdf")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open PDF";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="pdf.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
     }
 
-    init();
-  </script>
+    // DXF
+    if(await fileExists("DXF_file.dxf")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open DXF";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="dxf.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    // External model
+    const modelText = await fetch("model_link.txt").then(r=>r.text()).catch(()=>"");
+    if(modelText.trim()){
+      const btn = document.createElement("button");
+      btn.textContent = "External Model";
+      btn.onclick = () => { viewer.innerHTML = `<iframe src="${modelText.trim()}"></iframe>`; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    if(!added) toolbar.style.display='none';
+  }
+
+  init();
+</script>
+
 </body>
 </html>
-
