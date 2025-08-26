@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D & Docs Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { 
+    margin: 0; 
+    padding: 0; 
+    height: 100%; 
+    overflow: hidden; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+  }
+  
+  #container { 
+    display: flex; 
+    height: 100vh; 
+    width: 100vw; 
+    position: relative;
+  }
+  
+  #leftPanel, #rightPanel { 
+    height: 100%; 
+    overflow: hidden;
+    position: relative;
+  }
+  
+  #leftPanel {
+    flex: 0 0 50%;
+  }
+  
+  #rightPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #divider {
+    width: 8px; 
+    cursor: col-resize; 
+    background-color: #ddd;
+    position: relative;
+    z-index: 10;
+    transition: background-color 0.2s;
+  }
+  
+  #divider:hover, #divider.dragging {
+    background-color: #aaa;
+  }
+  
+  #divider::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 1px;
+    right: 1px;
+    height: 40px;
+    margin-top: -20px;
+    background-color: #999;
+    border-radius: 2px;
+  }
+  
+  iframe { 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+  }
+  
+  #toolbar { 
+    background: #f0f0f0; 
+    padding: 8px 12px; 
+    display: flex; 
+    gap: 8px; 
+    border-bottom: 1px solid #ddd;
+    flex-wrap: wrap;
+  }
+  
+  #viewer { 
+    flex: 1; 
+    position: relative;
+    overflow: auto;
+  }
+  
+  #empty { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    height: 100%;
+    font-style: italic; 
+    color: #888; 
+    background-color: #f9f9f9;
+  }
+  
+  .toolbar-btn {
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+  
+  .toolbar-btn:hover {
+    background: #e6f7ff;
+    border-color: #91d5ff;
+  }
+  
+  .toolbar-btn.active {
+    background: #1890ff;
+    color: white;
+    border-color: #1890ff;
+  }
+  
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .viewer-content {
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+  
+  .viewer-content.active {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div id="container">
+  <div id="leftPanel">
+    <iframe id="vtFrame"></iframe>
+  </div>
+
+  <div id="divider"></div>
+
+  <div id="rightPanel">
+    <div id="toolbar"></div>
+    <div id="viewer">
+      <div id="empty">No add-ons yet</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ----------------- Resizable divider -----------------
+  const divider = document.getElementById('divider');
+  const container = document.getElementById('container');
+  const leftPanel = document.getElementById('leftPanel');
+  const rightPanel = document.getElementById('rightPanel');
+  const MIN_PANEL_WIDTH = 200; // Minimum width for each panel
+
+  let isDragging = false;
+
+  divider.addEventListener('mousedown', (e) => { 
+    isDragging = true;
+    divider.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  
+  window.addEventListener('mouseup', () => { 
+    isDragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+  
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const dividerWidth = divider.offsetWidth;
+    const relativeX = e.clientX - containerRect.left;
+    
+    // Calculate widths with constraints
+    const leftWidth = Math.max(MIN_PANEL_WIDTH, Math.min(containerRect.width - MIN_PANEL_WIDTH - dividerWidth, relativeX));
+    const rightWidth = containerRect.width - leftWidth - dividerWidth;
+    
+    leftPanel.style.flex = `0 0 ${leftWidth}px`;
+    rightPanel.style.flex = `0 0 ${rightWidth}px`;
+  });
+
+  // ----------------- Dashboard logic -----------------
+  async function fileExists(url) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      return res.ok;
+    } catch { 
+      return false; 
+    }
+  }
+
+  function showLoading() {
+    const viewer = document.getElementById("viewer");
+    viewer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  }
+
+  function createIFCViewer() {
+    // This is a placeholder for your IFC viewer implementation
+    // You'll need to integrate a proper IFC viewer library here
+    const ifcContainer = document.createElement('div');
+    ifcContainer.className = 'viewer-content';
+    ifcContainer.id = 'ifc-viewer';
+    ifcContainer.innerHTML = `
+      <div style="padding: 20px;">
+        <h2>IFC Viewer</h2>
+        <p>Integrate an IFC.js or other IFC viewer here</p>
+        <p>File: BIM_file.ifc</p>
+      </div>
+    `;
+    return ifcContainer;
+  }
+
+  function createPDFViewer() {
+    // Placeholder for PDF viewer
+    const pdfContainer = document.createElement('div');
+    pdfContainer.className = 'viewer-content';
+    pdfContainer.id = 'pdf-viewer';
+    pdfContainer.innerHTML = `
+      <iframe src="DOC_file.pdf" width="100%" height="100%" style="border: none;"></iframe>
+    `;
+    return pdfContainer;
+  }
+
+  function createDXFViewer() {
+    // Placeholder for DXF viewer
+    const dxfContainer = document.createElement('div');
+    dxfContainer.className = 'viewer-content';
+    dxfContainer.id = 'dxf-viewer';
+    dxfContainer.innerHTML = `
+      <div style="padding: 20px;">
+        <h2>DXF Viewer</h2>
+        <p>Integrate a DXF viewer here</p>
+        <p>File: DXF_file.dxf</p>
+      </div>
+    `;
+    return dxfContainer;
+  }
+
+  function createModelViewer(url) {
+    // Placeholder for 3D model viewer
+    const modelContainer = document.createElement('div');
+    modelContainer.className = 'viewer-content';
+    modelContainer.id = 'model-viewer';
+    modelContainer.innerHTML = `
+      <iframe src="${url}" width="100%" height="100%" style="border: none;"></iframe>
+    `;
+    return modelContainer;
+  }
+
+  async function init() {
+    const toolbar = document.getElementById("toolbar");
+    const viewer = document.getElementById("viewer");
+    const empty = document.getElementById("empty");
+
+    // Load Virtual Tour
+    try {
+      const vtResponse = await fetch("vt_link.txt");
+      const vtText = await vtResponse.text();
+      if (vtText.trim()) {
+        document.getElementById("vtFrame").src = vtText.trim();
+      } else {
+        document.getElementById("vtFrame").srcdoc = "<div style='display:flex;align-items:center;justify-content:center;height:100%;'><p>No Virtual Tour Configured</p></div>";
+      }
+    } catch (error) {
+      console.error("Error loading virtual tour:", error);
+      document.getElementById("vtFrame").srcdoc = "<div style='display:flex;align-items:center;justify-content:center;height:100%;'><p>Error loading virtual tour</p></div>";
+    }
+
+    let added = false;
+    let activeButton = null;
+
+    // IFC
+    if(await fileExists("BIM_file.ifc")){
+      const btn = document.createElement("button");
+      btn.textContent = "IFC";
+      btn.className = "toolbar-btn";
+      btn.onclick = () => {
+        showLoading();
+        setTimeout(() => {
+          // Remove active class from all buttons
+          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+          // Add active class to clicked button
+          btn.classList.add('active');
+          
+          // Create or show IFC viewer
+          let ifcViewer = document.getElementById('ifc-viewer');
+          if (!ifcViewer) {
+            ifcViewer = createIFCViewer();
+            viewer.appendChild(ifcViewer);
+          }
+          
+          // Hide all viewers and show the IFC one
+          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
+          ifcViewer.classList.add('active');
+          empty.style.display = 'none';
+        }, 500); // Simulate loading time
+      };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    // PDF
+    if(await fileExists("DOC_file.pdf")){
+      const btn = document.createElement("button");
+      btn.textContent = "PDF";
+      btn.className = "toolbar-btn";
+      btn.onclick = () => {
+        showLoading();
+        setTimeout(() => {
+          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          let pdfViewer = document.getElementById('pdf-viewer');
+          if (!pdfViewer) {
+            pdfViewer = createPDFViewer();
+            viewer.appendChild(pdfViewer);
+          }
+          
+          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
+          pdfViewer.classList.add('active');
+          empty.style.display = 'none';
+        }, 500);
+      };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    // DXF
+    if(await fileExists("DXF_file.dxf")){
+      const btn = document.createElement("button");
+      btn.textContent = "DXF";
+      btn.className = "toolbar-btn";
+      btn.onclick = () => {
+        showLoading();
+        setTimeout(() => {
+          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          let dxfViewer = document.getElementById('dxf-viewer');
+          if (!dxfViewer) {
+            dxfViewer = createDXFViewer();
+            viewer.appendChild(dxfViewer);
+          }
+          
+          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
+          dxfViewer.classList.add('active');
+          empty.style.display = 'none';
+        }, 500);
+      };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    // External model
+    try {
+      const modelResponse = await fetch("model_link.txt");
+      const modelText = await modelResponse.text();
+      if(modelText.trim()){
+        const btn = document.createElement("button");
+        btn.textContent = "3D Model";
+        btn.className = "toolbar-btn";
+        btn.onclick = () => {
+          showLoading();
+          setTimeout(() => {
+            document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            let modelViewer = document.getElementById('model-viewer');
+            if (!modelViewer) {
+              modelViewer = createModelViewer(modelText.trim());
+              viewer.appendChild(modelViewer);
+            }
+            
+            document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
+            modelViewer.classList.add('active');
+            empty.style.display = 'none';
+          }, 500);
+        };
+        toolbar.appendChild(btn);
+        added = true;
+      }
+    } catch (error) {
+      console.error("Error loading model link:", error);
+    }
+
+    if(!added) {
+      toolbar.style.display = 'none';
+    }
+  }
+
+  // Initialize the dashboard
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
