@@ -1,59 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard Viewer</title>
-<style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
-  #container { display: flex; width: 100%; height: 100%; }
-  #left-panel { flex: 1; }
-  #right-panel { flex: 1; border-left: 1px solid #ccc; }
-  iframe { width: 100%; height: 100%; border: none; }
-  #buttons { position: absolute; top: 10px; right: 10px; z-index: 10; }
-  #buttons button { margin: 0 5px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Project Dashboard</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; font-family: sans-serif; }
+    #container { display: flex; height: 100vh; }
+    #left-panel, #right-panel { height: 100%; overflow: hidden; }
+    #left-panel { flex: 1; }
+    #right-panel { flex: 1; border-left: 2px solid #ccc; display: flex; flex-direction: column; }
+    #right-buttons { padding: 5px; background: #f0f0f0; display: flex; gap: 5px; }
+    #right-content { flex: 1; position: relative; }
+    iframe { width: 100%; height: 100%; border: 0; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-<div id="container">
-  <div id="left-panel">
-    <iframe id="left-panel-iframe" src=""></iframe>
+  <div id="container">
+    <div id="left-panel">
+      <iframe id="vt-frame"></iframe>
+    </div>
+    <div id="right-panel">
+      <div id="right-buttons">
+        <button id="btn-ifc">Open IFC</button>
+        <button id="btn-pdf">Open PDF</button>
+        <button id="btn-dxf">Open DXF</button>
+        <button id="btn-model">Open 3D Model</button>
+      </div>
+      <div id="right-content">
+        <div id="placeholder" style="padding:10px;">No add-ons yet</div>
+        <iframe id="ifc-frame" class="hidden"></iframe>
+        <iframe id="pdf-frame" class="hidden"></iframe>
+        <iframe id="dxf-frame" class="hidden"></iframe>
+        <iframe id="model-frame" class="hidden"></iframe>
+      </div>
+    </div>
   </div>
-  <div id="right-panel">
-    <iframe id="right-panel-iframe" src=""></iframe>
-  </div>
-</div>
 
-<div id="buttons">
-  <button onclick="loadRightPanel('ifc.html')">Open IFC</button>
-  <button onclick="loadRightPanel('pdf.html')">Open PDF</button>
-  <button onclick="loadRightPanel('dxf.html')">Open DXF</button>
-  <button onclick="loadRightPanel('model.html')">Open 3D Model</button>
-</div>
+  <script>
+    // Load the VT link (Panoee/Matterport)
+    fetch('vt_link.txt')
+      .then(res => res.text())
+      .then(url => document.getElementById('vt-frame').src = url.trim())
+      .catch(() => console.warn('vt_link.txt not found.'));
 
-<script>
-  // Load left panel URL from vt_link.txt
-  fetch('vt_link.txt')
-    .then(res => res.text())
-    .then(url => {
-      const leftFrame = document.getElementById('left-panel-iframe');
-      leftFrame.src = url.trim();
+    // Load the 3D model link
+    fetch('model_link.txt')
+      .then(res => res.text())
+      .then(url => window.modelUrl = url.trim())
+      .catch(() => console.warn('model_link.txt not found.'));
+
+    // Check local files and enable buttons
+    function fileExists(path) {
+      return fetch(path, { method: 'HEAD' })
+        .then(res => res.ok)
+        .catch(() => false);
+    }
+
+    async function setupButtons() {
+      const btnIfC = document.getElementById('btn-ifc');
+      const btnPDF = document.getElementById('btn-pdf');
+      const btnDXF = document.getElementById('btn-dxf');
+      const btnModel = document.getElementById('btn-model');
+
+      if(!await fileExists('BIM_file.ifc')) btnIfC.disabled = true;
+      if(!await fileExists('DOC_file.pdf')) btnPDF.disabled = true;
+      if(!await fileExists('DXF_file.dxf')) btnDXF.disabled = true;
+      if(!window.modelUrl) btnModel.disabled = true;
+    }
+    setupButtons();
+
+    function hideAllRightFrames() {
+      document.getElementById('placeholder').classList.remove('hidden');
+      ['ifc-frame','pdf-frame','dxf-frame','model-frame'].forEach(id => 
+        document.getElementById(id).classList.add('hidden')
+      );
+    }
+
+    // Button events
+    document.getElementById('btn-ifc').addEventListener('click', () => {
+      hideAllRightFrames();
+      document.getElementById('ifc-frame').src = './ifc.html';
+      document.getElementById('ifc-frame').classList.remove('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
     });
 
-  // Load model URL from model_link.txt (optional)
-  let modelURL = '';
-  fetch('model_link.txt')
-    .then(res => res.text())
-    .then(url => { modelURL = url.trim(); });
+    document.getElementById('btn-pdf').addEventListener('click', () => {
+      hideAllRightFrames();
+      document.getElementById('pdf-frame').src = './pdf.html';
+      document.getElementById('pdf-frame').classList.remove('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+    });
 
-  function loadRightPanel(url) {
-    const rightFrame = document.getElementById('right-panel-iframe');
-    
-    if(url === 'model.html' && modelURL){
-      rightFrame.src = modelURL;
-    } else {
-      rightFrame.src = url;
-    }
-  }
-</script>
+    document.getElementById('btn-dxf').addEventListener('click', () => {
+      hideAllRightFrames();
+      document.getElementById('dxf-frame').src = './dxf.html';
+      document.getElementById('dxf-frame').classList.remove('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+    });
+
+    document.getElementById('btn-model').addEventListener('click', () => {
+      hideAllRightFrames();
+      document.getElementById('model-frame').src = window.modelUrl;
+      document.getElementById('model-frame').classList.remove('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+    });
+  </script>
 </body>
 </html>
