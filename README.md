@@ -1,6 +1,6 @@
 #  Project Dashboard Prototype
 
-An interactive split-screen web dashboard displaying a panoramic (Panoee or Matterport) virtual tour on the left and interchangeable 3D/BIM, PDF, DXF, or external 3D model viewers on the right. Built as a modular, open-source prototype with the aim of enabling seamless visualization and collaboration.
+An interactive split-screen web dashboard displaying a panoramic (Panoee or Matterport) virtual tour on the left and interchangeable 3D/BIM, PDF, DXF, or external 3D model viewers (OBJ/LAS) on the right. Built as a modular, open-source prototype with the aim of enabling seamless visualization and collaboration.
 
 ---
 
