@@ -12,7 +12,8 @@
 <div id="viewer-container"></div>
 
 <script type="module">
-  import { IfcViewerAPI } from 'https://unpkg.com/web-ifc-viewer@0.0.50/dist/IFCviewerAPI.module.js';
+  // Import from local build folder
+  import { IfcViewerAPI } from './build/main.js';
 
   // Create the viewer
   const container = document.getElementById('viewer-container');
@@ -21,7 +22,7 @@
   viewer.axes.setAxes();
 
   // Load local IFC file automatically
-  const ifcFile = 'BIM_file.ifc'; // must exist in same folder
+  const ifcFile = './BIM_file.ifc'; // must exist in repo root
 
   fetch(ifcFile, { method: 'HEAD' })
     .then(res => {
@@ -32,7 +33,6 @@
       }
     })
     .catch(() => console.warn('BIM_file.ifc not found.'));
-
 </script>
 </body>
 </html>
