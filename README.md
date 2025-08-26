@@ -39,7 +39,7 @@ This project delivers a modular dashboard tool that:
 ##  Why It Matters
 
 - Offers a lightweight, fully front-end solution—no servers, no database.
-- Supports immersive visualization for AEC, asset management, and project review workflows.
+- Supports immersive visualization for AEC, FM/AM and Project Management assessment and review workflows.
 - Modular design enables easy extension and integration with additional formats.
 
 ---
