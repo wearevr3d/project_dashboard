@@ -1,12 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>PDF Viewer</title>
-  <style> html, body { margin: 0; height: 100%; } iframe { width: 100%; height: 100%; border: none; } </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #toolbar {
+            background: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+        #page-controls {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        button {
+            padding: 8px 12px;
+            margin: 0 5px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input {
+            width: 40px;
+            padding: 5px;
+            text-align: center;
+            margin: 0 5px;
+        }
+        #pdf-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        #pdf-view {
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 800px;
+            min-width: 600px;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <iframe src="DOC_file.pdf"></iframe>
+    <div id="toolbar">
+        <button id="prev-page">Previous</button>
+        <button id="next-page">Next</button>
+        <div id="page-controls">
+            <span>Page</span>
+            <input type="number" id="page-num" value="1" min="1">
+            <span id="page-count">of 1</span>
+        </div>
+        <button id="zoom-in" style="margin-left: 20px;">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        <button id="download">Download</button>
+    </div>
+    <div id="pdf-container">
+        <div id="pdf-view"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfView = document.getElementById('pdf-view');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            const pageNumInput = document.getElementById('page-num');
+            const pageCountSpan = document.getElementById('page-count');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const downloadBtn = document.getElementById('download');
+            
+            // Get the PDF file path from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const pdfFile = urlParams.get('file') || 'DOC_file.pdf';
+            
+            // Simulate PDF loading and display
+            simulatePDFLoading(pdfFile);
+            
+            // Navigation handlers
+            let currentPage = 1;
+            const totalPages = 5; // Simulated page count
+            
+            pageCountSpan.textContent = `of ${totalPages}`;
+            
+            prevPageBtn.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    pageNumInput.value = currentPage;
+                    renderPage(currentPage);
+                }
+            });
+            
+            nextPageBtn.addEventListener('click', function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    pageNumInput.value = currentPage;
+                    renderPage(currentPage);
+                }
+            });
+            
+            pageNumInput.addEventListener('change', function() {
+                const page = parseInt(this.value);
+                if (page >= 1 && page <= totalPages) {
+                    currentPage = page;
+                    renderPage(currentPage);
+                } else {
+                    this.value = currentPage;
+                }
+            });
+            
+            // Zoom handlers
+            let zoomLevel = 100;
+            
+            zoomInBtn.addEventListener('click', function() {
+                zoomLevel += 10;
+                updateZoom();
+            });
+            
+            zoomOutBtn.addEventListener('click', function() {
+                if (zoomLevel > 50) {
+                    zoomLevel -= 10;
+                    updateZoom();
+                }
+            });
+            
+            function updateZoom() {
+                pdfView.style.transform = `scale(${zoomLevel / 100})`;
+                pdfView.style.transformOrigin = 'top center';
+            }
+            
+            // Download handler
+            downloadBtn.addEventListener('click', function() {
+                alert(`In a real implementation, this would download ${pdfFile}`);
+            });
+            
+            // Render a page
+            function renderPage(pageNum) {
+                pdfView.innerHTML = `
+                    <h2>Project Documentation</h2>
+                    <p>File: ${pdfFile}</p>
+                    <p>Page ${pageNum} of ${totalPages}</p>
+                    <hr>
+                    <h3>Sample Content for Page ${pageNum}</h3>
+                    <p>This is simulated content for the PDF viewer. In a real implementation, 
+                    this would display the actual PDF content using a library like PDF.js.</p>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod 
+                    nisi velit, sit amet consequat lorem faucibus id. Phasellus maximus purus 
+                    nec magna consequat, at aliquam nisi tincidunt.</p>
+                    <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere 
+                    cubilia curae; Donec vehicula lectus eget magna aliquet, eget aliquam nisi 
+                    volutpat.</p>
+                `;
+            }
+            
+            // Initial render
+            renderPage(currentPage);
+        });
+        
+        function simulatePDFLoading(pdfFile) {
+            // In a real implementation, this would load the actual PDF
+            console.log(`Loading PDF: ${pdfFile}`);
+        }
+    </script>
 </body>
 </html>
-
