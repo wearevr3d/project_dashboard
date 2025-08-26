@@ -32,7 +32,7 @@ This project delivers a modular dashboard tool that:
    - **Open IFC** (when `BIM_file.ifc` is present),
    - **Open PDF**,
    - **Open DXF**,
-   - **Open 3D Model** (when `model_link.txt` exists).
+   - **Open 3D Model** (when `model_link.txt` exists) This can potentially be replaced with OBJloader and PCDloader via main.js + three.js bundle.
 
 ---
 
