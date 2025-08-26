@@ -1,38 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>IFC Viewer</title>
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #viewer-container { width: 100%; height: 100%; }
-  </style>
+<meta charset="UTF-8">
+<title>IFC Viewer</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  #viewer-container { width: 100%; height: 100%; }
+</style>
 </head>
 <body>
-  <div id="viewer-container"></div>
+<div id="viewer-container"></div>
 
-  <script type="module">
-    // Import IfcViewerAPI from your local build folder
-    import { IfcViewerAPI } from './build/main.js';
-
-    // Create the viewer
-    const container = document.getElementById('viewer-container');
-    const viewer = new IfcViewerAPI({ container, backgroundColor: 0xffffff });
-    viewer.grid.setGrid();
-    viewer.axes.setAxes();
-
-    // Load local IFC file automatically
-    const ifcFile = './BIM_file.ifc'; // must exist in same folder as index.html
-
-    fetch(ifcFile, { method: 'HEAD' })
-      .then(res => {
-        if(res.ok){
-          viewer.IFC.loadIfcUrl(ifcFile);
-        } else {
-          console.warn('BIM_file.ifc not found.');
-        }
-      })
-      .catch(() => console.warn('BIM_file.ifc not found.'));
-  </script>
+<!-- Import your main.js as module from build folder -->
+<script type="module" src="./build/main.js"></script>
 </body>
 </html>
