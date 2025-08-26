@@ -213,6 +213,28 @@
             padding: 8px;
             font-size: 12px;
         }
+
+        .file-info {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .download-btn {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .download-btn i {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -336,9 +358,8 @@
         async function urlExists(url) {
             try {
                 const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                return true; // If we get any response, the URL likely exists
+                return true;
             } catch (error) {
-                // Check if it's a CORS error (which still means the URL exists)
                 if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
                     return true;
                 }
@@ -382,6 +403,38 @@
             }
         }
 
+        // Create a viewer for file types that can't be displayed directly
+        function createFileViewer(filename, content) {
+            return `
+                <div style="padding: 20px;">
+                    <div class="file-info">
+                        <h3>${filename}</h3>
+                        <p>This file cannot be displayed directly in the browser.</p>
+                        <button class="download-btn" onclick="downloadFile('${filename}')">
+                            <i class="fas fa-download"></i> Download File
+                        </button>
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                        <h4>File Preview</h4>
+                        <p>For IFC and DXF files, you need specialized software to view them properly.</p>
+                        <p>For PDF files, they may not display when running from local file system due to browser security restrictions.</p>
+                        <pre style="background: #2c3e50; color: white; padding: 10px; border-radius: 4px; overflow: auto; max-height: 300px; margin-top: 10px;">${content}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Download file function
+        function downloadFile(filename) {
+            // Create a temporary link to trigger download
+            const link = document.createElement('a');
+            link.href = filename;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // Initialize the dashboard
         async function initDashboard() {
             // Load virtual tour
@@ -390,9 +443,34 @@
             // Check for IFC file
             if (await fileExists('BIM_file.ifc')) {
                 ifcBtn.disabled = false;
-                ifcBtn.onclick = () => {
+                ifcBtn.onclick = async () => {
                     noContent.style.display = 'none';
-                    viewer.innerHTML = '<iframe src="ifc.html?file=BIM_file.ifc"></iframe>';
+                    viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading IFC file...</p></div>';
+                    
+                    try {
+                        // Try to load and display a preview of the IFC file
+                        const response = await fetch('BIM_file.ifc');
+                        const content = await response.text();
+                        // Display first 1000 characters as preview
+                        const previewContent = content.length > 1000 ? content.substring(0, 1000) + '...' : content;
+                        viewer.innerHTML = createFileViewer('BIM_file.ifc', previewContent);
+                    } catch (error) {
+                        viewer.innerHTML = `
+                            <div style="padding: 20px;">
+                                <div class="file-info">
+                                    <h3>BIM_file.ifc</h3>
+                                    <p>This IFC file cannot be displayed directly in the browser.</p>
+                                    <button class="download-btn" onclick="downloadFile('BIM_file.ifc')">
+                                        <i class="fas fa-download"></i> Download IFC File
+                                    </button>
+                                </div>
+                                <div style="margin-top: 20px; text-align: center;">
+                                    <i class="fas fa-cube" style="font-size: 48px; color: #bdc3c7;"></i>
+                                    <p>IFC files require specialized BIM software to view properly.</p>
+                                </div>
+                            </div>
+                        `;
+                    }
                     
                     // Highlight active button
                     document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
@@ -405,7 +483,39 @@
                 pdfBtn.disabled = false;
                 pdfBtn.onclick = () => {
                     noContent.style.display = 'none';
-                    viewer.innerHTML = '<iframe src="pdf.html?file=DOC_file.pdf"></iframe>';
+                    
+                    // Try to display PDF in an iframe
+                    viewer.innerHTML = `
+                        <div style="display: flex; flex-direction: column; height: 100%;">
+                            <div style="padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+                                <h3>DOC_file.pdf</h3>
+                                <p>Viewing PDF file in browser</p>
+                            </div>
+                            <iframe src="DOC_file.pdf" style="flex: 1; border: none;"></iframe>
+                        </div>
+                    `;
+                    
+                    // If the PDF doesn't load properly, show a fallback
+                    setTimeout(() => {
+                        const iframe = viewer.querySelector('iframe');
+                        if (iframe && (!iframe.contentDocument || iframe.contentDocument.body.innerText.includes('preview'))) {
+                            viewer.innerHTML = `
+                                <div style="padding: 20px;">
+                                    <div class="file-info">
+                                        <h3>DOC_file.pdf</h3>
+                                        <p>PDF may not display properly when running from local file system.</p>
+                                        <button class="download-btn" onclick="downloadFile('DOC_file.pdf')">
+                                            <i class="fas fa-download"></i> Download PDF File
+                                        </button>
+                                    </div>
+                                    <div style="margin-top: 20px; text-align: center;">
+                                        <i class="fas fa-file-pdf" style="font-size: 48px; color: #e74c3c;"></i>
+                                        <p>You can download the PDF file to view it with a PDF reader.</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }, 2000);
                     
                     document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
                     pdfBtn.classList.add('active');
@@ -415,9 +525,34 @@
             // Check for DXF file
             if (await fileExists('DXF_file.dxf')) {
                 dxfBtn.disabled = false;
-                dxfBtn.onclick = () => {
+                dxfBtn.onclick = async () => {
                     noContent.style.display = 'none';
-                    viewer.innerHTML = '<iframe src="dxf.html?file=DXF_file.dxf"></iframe>';
+                    viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading DXF file...</p></div>';
+                    
+                    try {
+                        // Try to load and display a preview of the DXF file
+                        const response = await fetch('DXF_file.dxf');
+                        const content = await response.text();
+                        // Display first 1000 characters as preview
+                        const previewContent = content.length > 1000 ? content.substring(0, 1000) + '...' : content;
+                        viewer.innerHTML = createFileViewer('DXF_file.dxf', previewContent);
+                    } catch (error) {
+                        viewer.innerHTML = `
+                            <div style="padding: 20px;">
+                                <div class="file-info">
+                                    <h3>DXF_file.dxf</h3>
+                                    <p>This DXF file cannot be displayed directly in the browser.</p>
+                                    <button class="download-btn" onclick="downloadFile('DXF_file.dxf')">
+                                        <i class="fas fa-download"></i> Download DXF File
+                                    </button>
+                                </div>
+                                <div style="margin-top: 20px; text-align: center;">
+                                    <i class="fas fa-drafting-compass" style="font-size: 48px; color: #bdc3c7;"></i>
+                                    <p>DXF files require CAD software to view properly.</p>
+                                </div>
+                            </div>
+                        `;
+                    }
                     
                     document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
                     dxfBtn.classList.add('active');
