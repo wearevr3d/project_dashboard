@@ -1,48 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Project Dashboard</title>
-<style>
-  html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: sans-serif; }
-  #container { display: flex; height: 100%; width: 100%; }
-  #left-panel { width: 25%; background: #f5f5f5; overflow-y: auto; padding: 10px; box-sizing: border-box; }
-  #right-panel { flex: 1; position: relative; }
-  #viewer-container { width: 100%; height: 100%; }
-  .button { display: block; margin: 10px 0; padding: 8px 12px; background: #0078d7; color: #fff; border: none; cursor: pointer; border-radius: 4px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Project Dashboard</title>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+    #container { display: flex; height: 100%; width: 100%; }
+    #left { flex: 2; border-right: 2px solid #ccc; }
+    #right { flex: 1; position: relative; }
+    iframe { width: 100%; height: 100%; border: none; }
+    #noAddOns {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #888; font-size: 1.2em; text-align: center;
+    }
+    #toolbar {
+      position: absolute; top: 5px; right: 5px; z-index: 10;
+      display: flex; gap: 5px;
+    }
+    button { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+  </style>
 </head>
 <body>
-
-<div id="container">
-  <div id="left-panel">
-    <h2>Project Files</h2>
-    <button class="button" id="load-ifc-btn">Load IFC</button>
-    <input type="file" id="ifc-file-input" accept=".ifc" style="display:none;">
-    <ul>
-      <li><a href="DOC_file.pdf" target="_blank">DOC_file.pdf</a></li>
-      <li><a href="DXF_file.dxf" target="_blank">DXF_file.dxf</a></li>
-      <li><a href="vt_link.txt" target="_blank">VT Link</a></li>
-      <li><a href="model_link.txt" target="_blank">Model Link</a></li>
-    </ul>
-  </div>
-
-  <div id="right-panel">
-    <div id="viewer-container"></div>
-    <div id="loading-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.8);display:flex;justify-content:center;align-items:center;font-size:1.2em;display:none;">
-      <span id="loading-progress">Loading...</span>
+  <div id="container">
+    <div id="left">
+      <iframe id="vtFrame" src=""></iframe>
+    </div>
+    <div id="right">
+      <div id="toolbar">
+        <button id="btnIFC" disabled>IFC</button>
+        <button id="btnPDF" disabled>PDF</button>
+        <button id="btnModel" disabled>3D Model</button>
+      </div>
+      <iframe id="rightFrame" src=""></iframe>
+      <div id="noAddOns">No add-ons yet</div>
     </div>
   </div>
-</div>
 
-<script type="module">
-  import './build/main.js';
+  <script>
+    // Utility: load file text if exists
+    async function loadText(file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error();
+        return await res.text();
+      } catch {
+        return null;
+      }
+    }
 
-  const loadBtn = document.getElementById('load-ifc-btn');
-  const inputFile = document.getElementById('ifc-file-input');
+    async function init() {
+      // Left panel (virtual tour)
+      const vtLink = await loadText("vt_link.txt");
+      if (vtLink) {
+        document.getElementById("vtFrame").src = vtLink.trim();
+      } else {
+        document.getElementById("vtFrame").outerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">No VT</div>';
+      }
 
-  loadBtn.addEventListener('click', () => inputFile.click());
-</script>
+      let addons = false;
 
+      // IFC
+      try {
+        const ifcRes = await fetch("BIM_file.ifc");
+        if (ifcRes.ok) {
+          document.getElementById("btnIFC").disabled = false;
+          document.getElementById("btnIFC").onclick = () => {
+            document.getElementById("rightFrame").src = "ifc.html";
+            document.getElementById("noAddOns").style.display = "none";
+          };
+          addons = true;
+        }
+      } catch {}
+
+      // PDF
+      try {
+        const pdfRes = await fetch("DOC_file.pdf");
+        if (pdfRes.ok) {
+          document.getElementById("btnPDF").disabled = false;
+          document.getElementById("btnPDF").onclick = () => {
+            document.getElementById("rightFrame").src = "pdf.html";
+            document.getElementById("noAddOns").style.display = "none";
+          };
+          addons = true;
+        }
+      } catch {}
+
+      // External Model (Sketchfab / Autodesk Viewer link)
+      const modelLink = await loadText("model_link.txt");
+      if (modelLink) {
+        document.getElementById("btnModel").disabled = false;
+        document.getElementById("btnModel").onclick = () => {
+          document.getElementById("rightFrame").src = "model.html";
+          document.getElementById("noAddOns").style.display = "none";
+        };
+        addons = true;
+      }
+
+      if (!addons) {
+        document.getElementById("rightFrame").style.display = "none";
+      }
+    }
+
+    init();
+  </script>
 </body>
 </html>
