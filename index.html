@@ -4,659 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 20px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-
-        .logo-icon {
-            margin-right: 10px;
-        }
-
-        .container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .panel {
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .left-panel {
-            flex: 0 0 50%;
-            background: #1a2530;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-header {
-            background: #34495e;
-            color: white;
-            padding: 10px 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        .panel-icon {
-            margin-right: 8px;
-        }
-
-        .virtual-tour {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .virtual-tour iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .divider {
-            width: 8px;
-            background: #3498db;
-            cursor: col-resize;
-            position: relative;
-            z-index: 10;
-        }
-
-        .divider:hover {
-            background: #2980b9;
-        }
-
-        .right-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #ecf0f1;
-        }
-
-        .toolbar {
-            background: white;
-            padding: 10px 15px;
-            display: flex;
-            gap: 8px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .toolbar-btn {
-            padding: 8px 12px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-        }
-
-        .toolbar-btn:hover {
-            background: #2980b9;
-        }
-
-        .toolbar-btn:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-        }
-
-        .toolbar-btn.active {
-            background: #2c3e50;
-        }
-
-        .toolbar-btn i {
-            margin-right: 6px;
-        }
-
-        .viewer {
-            flex: 1;
-            overflow: auto;
-            background: white;
-            position: relative;
-        }
-
-        .viewer iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .no-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #7f8c8d;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .no-content i {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: #bdc3c7;
-        }
-
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 16px;
-            background: #e74c3c;
-            color: white;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            display: none;
-            z-index: 1000;
-        }
-
-        .footer {
-            background: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 8px;
-            font-size: 12px;
-        }
-
-        .file-info {
-            padding: 15px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .download-btn {
-            margin-top: 10px;
-            padding: 6px 12px;
-            background: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .download-btn i {
-            margin-right: 5px;
-        }
-        
-        #ifc-viewer {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        
-        #viewer-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+    <!-- Add the Permissions Policy to silence the WebXR warning -->
+    <meta http-equiv="Permissions-Policy" content="xr-spatial-tracking=(self)">
+    <link rel="stylesheet" href="styles.css">
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <div class="logo">
-            <i class="fas fa-project-diagram logo-icon"></i>
-            <span>Project Dashboard</span>
-        </div>
-        <div class="header-info">
-            <i class="fas fa-calendar-alt"></i>
-            <span id="current-date"></span>
-        </div>
-    </div>
+    <header>
+        <h1>Project Dashboard</h1>
+        <p>Central hub for all project documents and models</p>
+    </header>
 
-    <div class="container">
-        <div class="panel left-panel">
-            <div class="panel-header">
-                <i class="fas fa-vr-cardboard panel-icon"></i>
-                <span>Virtual Tour</span>
-            </div>
-            <div class="virtual-tour">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading virtual tour...</p>
-                </div>
-            </div>
-        </div>
+    <nav class="tabs">
+        <button class="tab-button active" onclick="openTab('pdfViewer')"><i class="fas fa-file-pdf"></i> Drawings</button>
+        <button class="tab-button" onclick="openTab('viewer-container')"><i class="fas fa-cube"></i> 3D Model</button>
+        <button class="tab-button" onclick="openTab('ifcViewer')"><i class="fas fa-home"></i> IFC Viewer</button>
+        <button class="tab-button" onclick="openTab('dxfViewer')"><i class="fas fa-drafting-compass"></i> DXF Viewer</button>
+    </nav>
 
-        <div class="divider"></div>
-
-        <div class="panel right-panel">
-            <div class="toolbar">
-                <button class="toolbar-btn" id="ifc-btn" disabled>
-                    <i class="fas fa-cube"></i>
-                    <span>IFC</span>
-                </button>
-                <button class="toolbar-btn" id="pdf-btn" disabled>
-                    <i class="fas fa-file-pdf"></i>
-                    <span>PDF</span>
-                </button>
-                <button class="toolbar-btn" id="dxf-btn" disabled>
-                    <i class="fas fa-drafting-compass"></i>
-                    <span>DXF</span>
-                </button>
-                <button class="toolbar-btn" id="model-btn" disabled>
-                    <i class="fas fa-box-open"></i>
-                    <span>3D Model</span>
-                </button>
+    <main>
+        <!-- PDF Viewer Tab -->
+        <div id="pdfViewer" class="tab-content active">
+            <div class="controls">
+                <button id="prevPage"><i class="fas fa-arrow-left"></i> Previous</button>
+                <span>Page: <span id="pageNum">1</span> / <span id="pageCount">0</span></span>
+                <button id="nextPage">Next <i class="fas fa-arrow-right"></i></button>
+                <input type="file" id="fileInput" accept=".pdf">
             </div>
-            <div class="viewer">
-                <div class="no-content">
-                    <i class="fas fa-folder-open"></i>
-                    <h3>No file selected</h3>
-                    <p>Select a file from the toolbar to view it</p>
-                </div>
+            <div class="canvas-container">
+                <canvas id="pdfCanvas"></canvas>
             </div>
         </div>
-    </div>
 
-    <div class="notification" id="notification">
-        <i class="fas fa-exclamation-circle"></i>
-        <span id="notification-text"></span>
-    </div>
+        <!-- Autodesk 3D Model Viewer Tab -->
+        <div id="viewer-container" class="tab-content">
+            <div id="viewer"></div>
+        </div>
 
-    <div class="footer">
-        <p>Project Dashboard &copy; 2023</p>
-    </div>
+        <!-- IFC Viewer Tab -->
+        <div id="ifcViewer" class="tab-content">
+            <div class="viewer-placeholder">
+                <p><i class="fas fa-exclamation-triangle"></i> For full IFC model review, please use specialized BIM software.</p>
+                <p>A simplified 3D view is available below for quick reference.</p>
+                <button id="ifcBtn">Load IFC Model</button>
+            </div>
+            <div id="ifcContainer" style="width: 100%; height: 600px; display: none;">
+                <!-- The Three.js canvas will be inserted here by your script -->
+            </div>
+        </div>
 
-    <script>
-        // Set current date
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+        <!-- DXF Viewer Tab -->
+        <div id="dxfViewer" class="tab-content">
+            <div class="viewer-placeholder">
+                <p><i class="fas fa-exclamation-triangle"></i> For full DXF editing and review, please use specialized CAD software.</p>
+                <p>A simplified 2D view is available below for quick reference.</p>
+                <button id="dxfBtn">Load DXF File</button>
+            </div>
+            <div id="dxfContainer" style="width: 100%; height: 600px; display: none;">
+                <canvas id="dxfCanvas"></canvas>
+            </div>
+        </div>
+    </main>
 
-        // Resizable divider functionality
-        const divider = document.querySelector('.divider');
-        const leftPanel = document.querySelector('.left-panel');
-        const container = document.querySelector('.container');
-        let isResizing = false;
+    <!--
+        **************************************************************
+        LOAD ALL EXTERNAL LIBRARIES FIRST
+        Your main.js depends on these, so they MUST be loaded before it.
+        **************************************************************
+    -->
+    <!-- THREE.js - Core 3D Library -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <!-- Web-IFC-Three.js - IFC.js for Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.34/dist/web-ifc-three.js"></script>
+    <!-- Autodesk Viewer API -->
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js"></script>
+    <!-- PDF.js worker -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
 
-        divider.addEventListener('mousedown', function(e) {
-            isResizing = true;
-            document.addEventListener('mousemove', handleResize);
-            document.addEventListener('mouseup', stopResize);
-        });
-
-        function handleResize(e) {
-            if (!isResizing) return;
-            
-            const containerRect = container.getBoundingClientRect();
-            const percent = (e.clientX - containerRect.left) / containerRect.width * 100;
-            leftPanel.style.flexBasis = Math.max(20, Math.min(80, percent)) + '%';
-        }
-
-        function stopResize() {
-            isResizing = false;
-            document.removeEventListener('mousemove', handleResize);
-            document.removeEventListener('mouseup', stopResize);
-        }
-
-        // File checking and viewer functionality
-        const ifcBtn = document.getElementById('ifc-btn');
-        const pdfBtn = document.getElementById('pdf-btn');
-        const dxfBtn = document.getElementById('dxf-btn');
-        const modelBtn = document.getElementById('model-btn');
-        const viewer = document.querySelector('.viewer');
-        const noContent = document.querySelector('.no-content');
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notification-text');
-
-        // Check if file exists
-        async function fileExists(filename) {
-            try {
-                const response = await fetch(filename, { method: 'HEAD' });
-                return response.ok;
-            } catch (error) {
-                console.error(`Error checking ${filename}:`, error);
-                return false;
-            }
-        }
-
-        // Check if URL exists
-        async function urlExists(url) {
-            try {
-                const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                return true;
-            } catch (error) {
-                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        // Show notification
-        function showNotification(message) {
-            notificationText.textContent = message;
-            notification.style.display = 'flex';
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 4000);
-        }
-
-        // Load virtual tour
-        async function loadVirtualTour() {
-            try {
-                const response = await fetch('vt_link.txt');
-                if (!response.ok) {
-                    throw new Error('vt_link.txt not found');
-                }
-                
-                const vtUrl = (await response.text()).trim();
-                if (vtUrl) {
-                    const virtualTourContainer = document.querySelector('.virtual-tour');
-                    virtualTourContainer.innerHTML = `<iframe src="${vtUrl}" />`;
-                } else {
-                    throw new Error('Virtual tour URL is empty');
-                }
-            } catch (error) {
-                document.querySelector('.virtual-tour').innerHTML = `
-                    <div class="no-content">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Virtual Tour Not Available</h3>
-                        <p>${error.message || 'Could not load virtual tour'}</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Create a viewer for file types that can't be displayed directly
-        function createFileViewer(filename, content) {
-            return `
-                <div style="padding: 20px;">
-                    <div class="file-info">
-                        <h3>${filename}</h3>
-                        <p>This file cannot be displayed directly in the browser.</p>
-                        <button class="download-btn" onclick="downloadFile('${filename}')">
-                            <i class="fas fa-download"></i> Download File
-                        </button>
-                    </div>
-                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                        <h4>File Preview</h4>
-                        <p>For IFC and DXF files, you need specialized software to view them properly.</p>
-                        <pre style="background: #2c3e50; color: white; padding: 10px; border-radius: 4px; overflow: auto; max-height: 300px; margin-top: 10px;">${content}</pre>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Download file function
-        function downloadFile(filename) {
-            // Create a temporary link to trigger download
-            const link = document.createElement('a');
-            link.href = filename;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Initialize the dashboard
-        async function initDashboard() {
-            // Load virtual tour
-            await loadVirtualTour();
-            
-            // Check for IFC file
-            if (await fileExists('BIM_file.ifc')) {
-                ifcBtn.disabled = false;
-                ifcBtn.onclick = async () => {
-                    noContent.style.display = 'none';
-                    viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading IFC file...</p></div>';
-                    
-                    try {
-                        // Try to load the IFC viewer
-                        viewer.innerHTML = `
-                            <div id="viewer-container">
-                                <canvas id="ifc-canvas"></canvas>
-                            </div>
-                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px;">
-                                <h3>BIM_file.ifc</h3>
-                                <p>IFC.js Viewer</p>
-                            </div>
-                        `;
-                        
-                        // Initialize the IFC viewer
-                        initIFCViewer();
-                    } catch (error) {
-                        console.error("IFC viewer error:", error);
-                        viewer.innerHTML = `
-                            <div style="padding: 20px;">
-                                <div class="file-info">
-                                    <h3>BIM_file.ifc</h3>
-                                    <p>Error loading IFC viewer: ${error.message}</p>
-                                    <button class="download-btn" onclick="downloadFile('BIM_file.ifc')">
-                                        <i class="fas fa-download"></i> Download IFC File
-                                    </button>
-                                </div>
-                                <div style="margin-top: 20px; text-align: center;">
-                                    <i class="fas fa-cube" style="font-size: 48px; color: #bdc3c7;"></i>
-                                    <p>IFC files require specialized BIM software to view properly.</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Highlight active button
-                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-                    ifcBtn.classList.add('active');
-                };
-            }
-            
-            // Check for PDF file
-            if (await fileExists('DOC_file.pdf')) {
-                pdfBtn.disabled = false;
-                pdfBtn.onclick = () => {
-                    noContent.style.display = 'none';
-                    
-                    // Try to display PDF in an iframe
-                    viewer.innerHTML = `
-                        <div style="display: flex; flex-direction: column; height: 100%;">
-                            <div style="padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
-                                <h3>DOC_file.pdf</h3>
-                                <p>Viewing PDF file in browser</p>
-                            </div>
-                            <iframe src="DOC_file.pdf#toolbar=0" style="flex: 1; border: none;"></iframe>
-                        </div>
-                    `;
-                    
-                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-                    pdfBtn.classList.add('active');
-                };
-            }
-            
-            // Check for DXF file
-            if (await fileExists('DXF_file.dxf')) {
-                dxfBtn.disabled = false;
-                dxfBtn.onclick = async () => {
-                    noContent.style.display = 'none';
-                    viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading DXF file...</p></div>';
-                    
-                    try {
-                        // Try to load and display a preview of the DXF file
-                        const response = await fetch('DXF_file.dxf');
-                        const content = await response.text();
-                        // Display first 1000 characters as preview
-                        const previewContent = content.length > 1000 ? content.substring(0, 1000) + '...' : content;
-                        viewer.innerHTML = createFileViewer('DXF_file.dxf', previewContent);
-                    } catch (error) {
-                        viewer.innerHTML = `
-                            <div style="padding: 20px;">
-                                <div class="file-info">
-                                    <h3>DXF_file.dxf</h3>
-                                    <p>This DXF file cannot be displayed directly in the browser.</p>
-                                    <button class="download-btn" onclick="downloadFile('DXF_file.dxf')">
-                                        <i class="fas fa-download"></i> Download DXF File
-                                    </button>
-                                </div>
-                                <div style="margin-top: 20px; text-align: center;">
-                                    <i class="fas fa-drafting-compass" style="font-size: 48px; color: #bdc3c7;"></i>
-                                    <p>DXF files require CAD software to view properly.</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-                    dxfBtn.classList.add('active');
-                };
-            }
-            
-            // Check for 3D model URL
-            try {
-                const response = await fetch('model_link.txt');
-                if (response.ok) {
-                    const modelUrl = (await response.text()).trim();
-                    if (modelUrl && await urlExists(modelUrl)) {
-                        modelBtn.disabled = false;
-                        modelBtn.onclick = () => {
-                            noContent.style.display = 'none';
-                            viewer.innerHTML = `<iframe src="${modelUrl}"></iframe>`;
-                            
-                            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
-                            modelBtn.classList.add('active');
-                        };
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading model link:', error);
-            }
-            
-            // If no files are available, show message
-            const anyFilesAvailable = !ifcBtn.disabled || !pdfBtn.disabled || !dxfBtn.disabled || !modelBtn.disabled;
-            if (!anyFilesAvailable) {
-                document.querySelector('.toolbar').innerHTML = '<p style="padding: 8px 12px; color: #7f8c8d;">No project files available</p>';
-            }
-        }
-
-        // IFC.js Viewer Initialization
-        async function initIFCViewer() {
-            try {
-                // Check if IFC.js is available
-                if (typeof WebIFC === 'undefined') {
-                    throw new Error("IFC.js library not loaded");
-                }
-                
-                // Set up the IFC viewer
-                const canvas = document.getElementById('ifc-canvas');
-                const container = document.getElementById('viewer-container');
-                
-                // Set canvas size
-                function resizeCanvas() {
-                    canvas.width = container.clientWidth;
-                    canvas.height = container.clientHeight;
-                }
-                
-                window.addEventListener('resize', resizeCanvas);
-                resizeCanvas();
-                
-                // Draw a simple representation of a building
-                const ctx = canvas.getContext('2d');
-                
-                // Draw a building-like structure
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const width = 300;
-                const height = 200;
-                
-                // Base
-                ctx.fillStyle = '#95a5a6';
-                ctx.fillRect(centerX - width/2, centerY - height/2, width, height);
-                
-                // Windows
-                ctx.fillStyle = '#3498db';
-                for (let i = 0; i < 5; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        ctx.fillRect(
-                            centerX - width/2 + 50 + i * 50,
-                            centerY - height/2 + 40 + j * 50,
-                            30, 30
-                        );
-                    }
-                }
-                
-                // Roof
-                ctx.fillStyle = '#e74c3c';
-                ctx.beginPath();
-                ctx.moveTo(centerX - width/2 - 20, centerY - height/2);
-                ctx.lineTo(centerX + width/2 + 20, centerY - height/2);
-                ctx.lineTo(centerX, centerY - height/2 - 80);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Text
-                ctx.fillStyle = '#2c3e50';
-                ctx.font = '14px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('BIM_file.ifc', centerX, centerY + height/2 + 30);
-                ctx.font = '12px Arial';
-                ctx.fillText('IFC.js Viewer Simulation', centerX, centerY + height/2 + 50);
-                
-            } catch (error) {
-                console.error("IFC viewer initialization error:", error);
-                throw error;
-            }
-        }
-
-        // Initialize the dashboard when page loads
-        document.addEventListener('DOMContentLoaded', initDashboard);
-    </script>
-
-    <!-- Load IFC.js library -->
-    <script src="https://cdn.jsdelivr.net/npm/web-ifc@0.0.43/webifc.js"></script>
+    <!--
+        **************************************************************
+        LOAD YOUR CUSTOM SCRIPT LAST
+        This script uses all the libraries above, so it must be loaded after them.
+        **************************************************************
+    -->
+    <script src="main.js"></script>
 </body>
 </html>
