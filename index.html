@@ -1,419 +1,481 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D & Docs Dashboard</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body { 
-    margin: 0; 
-    padding: 0; 
-    height: 100%; 
-    overflow: hidden; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-  }
-  
-  #container { 
-    display: flex; 
-    height: 100vh; 
-    width: 100vw; 
-    position: relative;
-  }
-  
-  #leftPanel, #rightPanel { 
-    height: 100%; 
-    overflow: hidden;
-    position: relative;
-  }
-  
-  #leftPanel {
-    flex: 0 0 50%;
-  }
-  
-  #rightPanel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  #divider {
-    width: 8px; 
-    cursor: col-resize; 
-    background-color: #ddd;
-    position: relative;
-    z-index: 10;
-    transition: background-color 0.2s;
-  }
-  
-  #divider:hover, #divider.dragging {
-    background-color: #aaa;
-  }
-  
-  #divider::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 1px;
-    right: 1px;
-    height: 40px;
-    margin-top: -20px;
-    background-color: #999;
-    border-radius: 2px;
-  }
-  
-  iframe { 
-    width: 100%; 
-    height: 100%; 
-    border: none; 
-  }
-  
-  #toolbar { 
-    background: #f0f0f0; 
-    padding: 8px 12px; 
-    display: flex; 
-    gap: 8px; 
-    border-bottom: 1px solid #ddd;
-    flex-wrap: wrap;
-  }
-  
-  #viewer { 
-    flex: 1; 
-    position: relative;
-    overflow: auto;
-  }
-  
-  #empty { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    height: 100%;
-    font-style: italic; 
-    color: #888; 
-    background-color: #f9f9f9;
-  }
-  
-  .toolbar-btn {
-    padding: 6px 12px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 14px;
-  }
-  
-  .toolbar-btn:hover {
-    background: #e6f7ff;
-    border-color: #91d5ff;
-  }
-  
-  .toolbar-btn.active {
-    background: #1890ff;
-    color: white;
-    border-color: #1890ff;
-  }
-  
-  .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-  }
-  
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .viewer-content {
-    width: 100%;
-    height: 100%;
-    display: none;
-  }
-  
-  .viewer-content.active {
-    display: block;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Dashboard MVP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            margin-right: 10px;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            flex: 0 0 50%;
+            background: #1a2530;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .panel-icon {
+            margin-right: 8px;
+        }
+
+        .virtual-tour {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .virtual-tour iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .divider {
+            width: 8px;
+            background: #3498db;
+            cursor: col-resize;
+            position: relative;
+            z-index: 10;
+        }
+
+        .divider:hover {
+            background: #2980b9;
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ecf0f1;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 10px 15px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        .toolbar-btn:hover {
+            background: #2980b9;
+        }
+
+        .toolbar-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .toolbar-btn.active {
+            background: #2c3e50;
+        }
+
+        .toolbar-btn i {
+            margin-right: 6px;
+        }
+
+        .viewer {
+            flex: 1;
+            overflow: auto;
+            background: white;
+            position: relative;
+        }
+
+        .viewer-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .viewer-content.active {
+            display: block;
+        }
+
+        .no-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .no-content i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 1000;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
-
-<div id="container">
-  <div id="leftPanel">
-    <iframe id="vtFrame"></iframe>
-  </div>
-
-  <div id="divider"></div>
-
-  <div id="rightPanel">
-    <div id="toolbar"></div>
-    <div id="viewer">
-      <div id="empty">No add-ons yet</div>
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-project-diagram logo-icon"></i>
+            <span>Project Dashboard</span>
+        </div>
+        <div class="header-info">
+            <i class="fas fa-calendar-alt"></i>
+            <span id="current-date"></span>
+        </div>
     </div>
-  </div>
-</div>
 
-<script>
-  // ----------------- Resizable divider -----------------
-  const divider = document.getElementById('divider');
-  const container = document.getElementById('container');
-  const leftPanel = document.getElementById('leftPanel');
-  const rightPanel = document.getElementById('rightPanel');
-  const MIN_PANEL_WIDTH = 200; // Minimum width for each panel
+    <div class="container">
+        <div class="panel left-panel">
+            <div class="panel-header">
+                <i class="fas fa-vr-cardboard panel-icon"></i>
+                <span>Virtual Tour</span>
+            </div>
+            <div class="virtual-tour">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading virtual tour...</p>
+                </div>
+            </div>
+        </div>
 
-  let isDragging = false;
+        <div class="divider"></div>
 
-  divider.addEventListener('mousedown', (e) => { 
-    isDragging = true;
-    divider.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  });
-  
-  window.addEventListener('mouseup', () => { 
-    isDragging = false;
-    divider.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  });
-  
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    
-    const containerRect = container.getBoundingClientRect();
-    const dividerWidth = divider.offsetWidth;
-    const relativeX = e.clientX - containerRect.left;
-    
-    // Calculate widths with constraints
-    const leftWidth = Math.max(MIN_PANEL_WIDTH, Math.min(containerRect.width - MIN_PANEL_WIDTH - dividerWidth, relativeX));
-    const rightWidth = containerRect.width - leftWidth - dividerWidth;
-    
-    leftPanel.style.flex = `0 0 ${leftWidth}px`;
-    rightPanel.style.flex = `0 0 ${rightWidth}px`;
-  });
+        <div class="panel right-panel">
+            <div class="toolbar">
+                <button class="toolbar-btn" id="ifc-btn" disabled>
+                    <i class="fas fa-cube"></i>
+                    <span>IFC</span>
+                </button>
+                <button class="toolbar-btn" id="pdf-btn" disabled>
+                    <i class="fas fa-file-pdf"></i>
+                    <span>PDF</span>
+                </button>
+                <button class="toolbar-btn" id="dxf-btn" disabled>
+                    <i class="fas fa-drafting-compass"></i>
+                    <span>DXF</span>
+                </button>
+                <button class="toolbar-btn" id="model-btn" disabled>
+                    <i class="fas fa-box-open"></i>
+                    <span>3D Model</span>
+                </button>
+            </div>
+            <div class="viewer">
+                <div class="no-content">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>No file selected</h3>
+                    <p>Select a file from the toolbar to view it</p>
+                </div>
+                
+                <iframe id="ifc-viewer" class="viewer-content" src="about:blank"></iframe>
+                <iframe id="pdf-viewer" class="viewer-content" src="about:blank"></iframe>
+                <iframe id="dxf-viewer" class="viewer-content" src="about:blank"></iframe>
+                <iframe id="model-viewer" class="viewer-content" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
 
-  // ----------------- Dashboard logic -----------------
-  async function fileExists(url) {
-    try {
-      const res = await fetch(url, { method: 'HEAD' });
-      return res.ok;
-    } catch { 
-      return false; 
-    }
-  }
+    <div class="notification" id="notification">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="notification-text"></span>
+    </div>
 
-  function showLoading() {
-    const viewer = document.getElementById("viewer");
-    viewer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  }
+    <div class="footer">
+        <p>Project Dashboard &copy; 2023</p>
+    </div>
 
-  function createIFCViewer() {
-    // This is a placeholder for your IFC viewer implementation
-    // You'll need to integrate a proper IFC viewer library here
-    const ifcContainer = document.createElement('div');
-    ifcContainer.className = 'viewer-content';
-    ifcContainer.id = 'ifc-viewer';
-    ifcContainer.innerHTML = `
-      <div style="padding: 20px;">
-        <h2>IFC Viewer</h2>
-        <p>Integrate an IFC.js or other IFC viewer here</p>
-        <p>File: BIM_file.ifc</p>
-      </div>
-    `;
-    return ifcContainer;
-  }
+    <script>
+        // Set current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
 
-  function createPDFViewer() {
-    // Placeholder for PDF viewer
-    const pdfContainer = document.createElement('div');
-    pdfContainer.className = 'viewer-content';
-    pdfContainer.id = 'pdf-viewer';
-    pdfContainer.innerHTML = `
-      <iframe src="DOC_file.pdf" width="100%" height="100%" style="border: none;"></iframe>
-    `;
-    return pdfContainer;
-  }
+        // Resizable divider functionality
+        const divider = document.querySelector('.divider');
+        const leftPanel = document.querySelector('.left-panel');
+        const container = document.querySelector('.container');
+        let isResizing = false;
 
-  function createDXFViewer() {
-    // Placeholder for DXF viewer
-    const dxfContainer = document.createElement('div');
-    dxfContainer.className = 'viewer-content';
-    dxfContainer.id = 'dxf-viewer';
-    dxfContainer.innerHTML = `
-      <div style="padding: 20px;">
-        <h2>DXF Viewer</h2>
-        <p>Integrate a DXF viewer here</p>
-        <p>File: DXF_file.dxf</p>
-      </div>
-    `;
-    return dxfContainer;
-  }
+        divider.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('mouseup', stopResize);
+        });
 
-  function createModelViewer(url) {
-    // Placeholder for 3D model viewer
-    const modelContainer = document.createElement('div');
-    modelContainer.className = 'viewer-content';
-    modelContainer.id = 'model-viewer';
-    modelContainer.innerHTML = `
-      <iframe src="${url}" width="100%" height="100%" style="border: none;"></iframe>
-    `;
-    return modelContainer;
-  }
-
-  async function init() {
-    const toolbar = document.getElementById("toolbar");
-    const viewer = document.getElementById("viewer");
-    const empty = document.getElementById("empty");
-
-    // Load Virtual Tour
-    try {
-      const vtResponse = await fetch("vt_link.txt");
-      const vtText = await vtResponse.text();
-      if (vtText.trim()) {
-        document.getElementById("vtFrame").src = vtText.trim();
-      } else {
-        document.getElementById("vtFrame").srcdoc = "<div style='display:flex;align-items:center;justify-content:center;height:100%;'><p>No Virtual Tour Configured</p></div>";
-      }
-    } catch (error) {
-      console.error("Error loading virtual tour:", error);
-      document.getElementById("vtFrame").srcdoc = "<div style='display:flex;align-items:center;justify-content:center;height:100%;'><p>Error loading virtual tour</p></div>";
-    }
-
-    let added = false;
-    let activeButton = null;
-
-    // IFC
-    if(await fileExists("BIM_file.ifc")){
-      const btn = document.createElement("button");
-      btn.textContent = "IFC";
-      btn.className = "toolbar-btn";
-      btn.onclick = () => {
-        showLoading();
-        setTimeout(() => {
-          // Remove active class from all buttons
-          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-          // Add active class to clicked button
-          btn.classList.add('active');
-          
-          // Create or show IFC viewer
-          let ifcViewer = document.getElementById('ifc-viewer');
-          if (!ifcViewer) {
-            ifcViewer = createIFCViewer();
-            viewer.appendChild(ifcViewer);
-          }
-          
-          // Hide all viewers and show the IFC one
-          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
-          ifcViewer.classList.add('active');
-          empty.style.display = 'none';
-        }, 500); // Simulate loading time
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // PDF
-    if(await fileExists("DOC_file.pdf")){
-      const btn = document.createElement("button");
-      btn.textContent = "PDF";
-      btn.className = "toolbar-btn";
-      btn.onclick = () => {
-        showLoading();
-        setTimeout(() => {
-          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          
-          let pdfViewer = document.getElementById('pdf-viewer');
-          if (!pdfViewer) {
-            pdfViewer = createPDFViewer();
-            viewer.appendChild(pdfViewer);
-          }
-          
-          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
-          pdfViewer.classList.add('active');
-          empty.style.display = 'none';
-        }, 500);
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // DXF
-    if(await fileExists("DXF_file.dxf")){
-      const btn = document.createElement("button");
-      btn.textContent = "DXF";
-      btn.className = "toolbar-btn";
-      btn.onclick = () => {
-        showLoading();
-        setTimeout(() => {
-          document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          
-          let dxfViewer = document.getElementById('dxf-viewer');
-          if (!dxfViewer) {
-            dxfViewer = createDXFViewer();
-            viewer.appendChild(dxfViewer);
-          }
-          
-          document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
-          dxfViewer.classList.add('active');
-          empty.style.display = 'none';
-        }, 500);
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // External model
-    try {
-      const modelResponse = await fetch("model_link.txt");
-      const modelText = await modelResponse.text();
-      if(modelText.trim()){
-        const btn = document.createElement("button");
-        btn.textContent = "3D Model";
-        btn.className = "toolbar-btn";
-        btn.onclick = () => {
-          showLoading();
-          setTimeout(() => {
-            document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function handleResize(e) {
+            if (!isResizing) return;
             
-            let modelViewer = document.getElementById('model-viewer');
-            if (!modelViewer) {
-              modelViewer = createModelViewer(modelText.trim());
-              viewer.appendChild(modelViewer);
+            const containerRect = container.getBoundingClientRect();
+            const percent = (e.clientX - containerRect.left) / containerRect.width * 100;
+            leftPanel.style.flexBasis = Math.max(20, Math.min(80, percent)) + '%';
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleResize);
+            document.removeEventListener('mouseup', stopResize);
+        }
+
+        // File checking and viewer functionality
+        const ifcBtn = document.getElementById('ifc-btn');
+        const pdfBtn = document.getElementById('pdf-btn');
+        const dxfBtn = document.getElementById('dxf-btn');
+        const modelBtn = document.getElementById('model-btn');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        const noContent = document.querySelector('.no-content');
+        const viewerIframes = {
+            'ifc': document.getElementById('ifc-viewer'),
+            'pdf': document.getElementById('pdf-viewer'),
+            'dxf': document.getElementById('dxf-viewer'),
+            'model': document.getElementById('model-viewer')
+        };
+
+        // Check if file exists
+        async function fileExists(filename) {
+            try {
+                const response = await fetch(filename, { method: 'HEAD' });
+                return response.ok;
+            } catch (error) {
+                console.error(`Error checking ${filename}:`, error);
+                return false;
+            }
+        }
+
+        // Check if URL exists
+        async function urlExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                return true; // If we get any response, the URL likely exists
+            } catch (error) {
+                // Check if it's a CORS error (which still means the URL exists)
+                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        // Show notification
+        function showNotification(message) {
+            notificationText.textContent = message;
+            notification.style.display = 'flex';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+
+        // Load virtual tour
+        async function loadVirtualTour() {
+            try {
+                const response = await fetch('vt_link.txt');
+                if (!response.ok) {
+                    throw new Error('vt_link.txt not found');
+                }
+                
+                const vtUrl = (await response.text()).trim();
+                if (vtUrl) {
+                    const virtualTourContainer = document.querySelector('.virtual-tour');
+                    virtualTourContainer.innerHTML = `<iframe src="${vtUrl}" />`;
+                } else {
+                    throw new Error('Virtual tour URL is empty');
+                }
+            } catch (error) {
+                document.querySelector('.virtual-tour').innerHTML = `
+                    <div class="no-content">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Virtual Tour Not Available</h3>
+                        <p>${error.message || 'Could not load virtual tour'}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize the dashboard
+        async function initDashboard() {
+            // Load virtual tour
+            await loadVirtualTour();
+            
+            // Check for IFC file
+            if (await fileExists('BIM_file.ifc')) {
+                ifcBtn.disabled = false;
+                ifcBtn.onclick = () => {
+                    noContent.style.display = 'none';
+                    Object.values(viewerIframes).forEach(iframe => iframe.classList.remove('active'));
+                    viewerIframes.ifc.classList.add('active');
+                    viewerIframes.ifc.src = 'BIM_file.ifc';
+                    
+                    // Highlight active button
+                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                    ifcBtn.classList.add('active');
+                };
             }
             
-            document.querySelectorAll('.viewer-content').forEach(v => v.classList.remove('active'));
-            modelViewer.classList.add('active');
-            empty.style.display = 'none';
-          }, 500);
-        };
-        toolbar.appendChild(btn);
-        added = true;
-      }
-    } catch (error) {
-      console.error("Error loading model link:", error);
-    }
+            // Check for PDF file
+            if (await fileExists('DOC_file.pdf')) {
+                pdfBtn.disabled = false;
+                pdfBtn.onclick = () => {
+                    noContent.style.display = 'none';
+                    Object.values(viewerIframes).forEach(iframe => iframe.classList.remove('active'));
+                    viewerIframes.pdf.classList.add('active');
+                    viewerIframes.pdf.src = 'DOC_file.pdf';
+                    
+                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                    pdfBtn.classList.add('active');
+                };
+            }
+            
+            // Check for DXF file
+            if (await fileExists('DXF_file.dxf')) {
+                dxfBtn.disabled = false;
+                dxfBtn.onclick = () => {
+                    noContent.style.display = 'none';
+                    Object.values(viewerIframes).forEach(iframe => iframe.classList.remove('active'));
+                    viewerIframes.dxf.classList.add('active');
+                    viewerIframes.dxf.src = 'DXF_file.dxf';
+                    
+                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                    dxfBtn.classList.add('active');
+                };
+            }
+            
+            // Check for 3D model URL
+            try {
+                const response = await fetch('model_link.txt');
+                if (response.ok) {
+                    const modelUrl = (await response.text()).trim();
+                    if (modelUrl && await urlExists(modelUrl)) {
+                        modelBtn.disabled = false;
+                        modelBtn.onclick = () => {
+                            noContent.style.display = 'none';
+                            Object.values(viewerIframes).forEach(iframe => iframe.classList.remove('active'));
+                            viewerIframes.model.classList.add('active');
+                            viewerIframes.model.src = modelUrl;
+                            
+                            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                            modelBtn.classList.add('active');
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading model link:', error);
+            }
+            
+            // If no files are available, show message
+            const anyFilesAvailable = !ifcBtn.disabled || !pdfBtn.disabled || !dxfBtn.disabled || !modelBtn.disabled;
+            if (!anyFilesAvailable) {
+                document.querySelector('.toolbar').innerHTML = '<p style="padding: 8px 12px; color: #7f8c8d;">No project files available</p>';
+            }
+        }
 
-    if(!added) {
-      toolbar.style.display = 'none';
-    }
-  }
-
-  // Initialize the dashboard
-  document.addEventListener('DOMContentLoaded', init);
-</script>
-
+        // Initialize the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
 </body>
 </html>
