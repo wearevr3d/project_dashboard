@@ -1,110 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Project Dashboard</title>
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
-    #container { display: flex; height: 100%; width: 100%; }
-    #left { flex: 2; border-right: 2px solid #ccc; }
-    #right { flex: 1; position: relative; }
-    iframe { width: 100%; height: 100%; border: none; }
-    #noAddOns {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #888; font-size: 1.2em; text-align: center;
-    }
-    #toolbar {
-      position: absolute; top: 5px; right: 5px; z-index: 10;
-      display: flex; gap: 5px;
-    }
-    button { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-  </style>
+<meta charset="UTF-8">
+<title>3D & Docs Dashboard</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+  #container { display: flex; height: 100vh; width: 100vw; }
+  #leftPanel, #rightPanel { flex-grow: 1; overflow: hidden; height: 100%; }
+  #divider {
+    width: 5px; cursor: ew-resize; background-color: #ccc; z-index: 10;
+  }
+  iframe { width: 100%; height: 100%; border: none; }
+  #toolbar { background: #f5f5f5; padding: 5px; display: flex; gap: 10px; }
+  #viewer { flex: 1; }
+  #empty { display: flex; align-items: center; justify-content: center; flex: 1; font-style: italic; color: #888; }
+</style>
 </head>
 <body>
-  <div id="container">
-    <div id="left">
-      <iframe id="vtFrame" src=""></iframe>
-    </div>
-    <div id="right">
-      <div id="toolbar">
-        <button id="btnIFC" disabled>IFC</button>
-        <button id="btnPDF" disabled>PDF</button>
-        <button id="btnModel" disabled>3D Model</button>
-      </div>
-      <iframe id="rightFrame" src=""></iframe>
-      <div id="noAddOns">No add-ons yet</div>
-    </div>
+
+<div id="container">
+  <div id="leftPanel">
+    <iframe id="vtFrame"></iframe>
   </div>
 
-  <script>
-    // Utility: load file text if exists
-    async function loadText(file) {
-      try {
-        const res = await fetch(file);
-        if (!res.ok) throw new Error();
-        return await res.text();
-      } catch {
-        return null;
-      }
+  <div id="divider"></div>
+
+  <div id="rightPanel">
+    <div id="toolbar"></div>
+    <div id="viewer"><div id="empty">No add-ons yet</div></div>
+  </div>
+</div>
+
+<script>
+  // ----------------- Resizable divider -----------------
+  const divider = document.getElementById('divider');
+  const leftPanel = document.getElementById('leftPanel');
+  const rightPanel = document.getElementById('rightPanel');
+
+  let isDragging = false;
+
+  divider.addEventListener('mousedown', (e) => { isDragging = true; });
+  window.addEventListener('mouseup', (e) => { isDragging = false; });
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const totalWidth = window.innerWidth;
+    const leftWidth = e.clientX;
+    const rightWidth = totalWidth - leftWidth - divider.offsetWidth;
+    leftPanel.style.flex = '0 0 ' + leftWidth + 'px';
+    rightPanel.style.flex = '0 0 ' + rightWidth + 'px';
+  });
+
+  // ----------------- Dashboard logic -----------------
+  async function fileExists(url) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      return res.ok;
+    } catch { return false; }
+  }
+
+  async function init() {
+    const toolbar = document.getElementById("toolbar");
+    const viewer = document.getElementById("viewer");
+    const empty = document.getElementById("empty");
+
+    // Load Virtual Tour
+    const vtText = await fetch("vt_link.txt").then(r=>r.text()).catch(()=>"");
+    if (vtText.trim()) document.getElementById("vtFrame").src = vtText.trim();
+    else document.getElementById("vtFrame").srcdoc = "<p style='text-align:center;margin-top:20px;'>No Virtual Tour</p>";
+
+    let added = false;
+
+    // IFC
+    if(await fileExists("BIM_file.ifc")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open IFC";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="ifc.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
     }
 
-    async function init() {
-      // Left panel (virtual tour)
-      const vtLink = await loadText("vt_link.txt");
-      if (vtLink) {
-        document.getElementById("vtFrame").src = vtLink.trim();
-      } else {
-        document.getElementById("vtFrame").outerHTML =
-          '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">No VT</div>';
-      }
-
-      let addons = false;
-
-      // IFC
-      try {
-        const ifcRes = await fetch("BIM_file.ifc");
-        if (ifcRes.ok) {
-          document.getElementById("btnIFC").disabled = false;
-          document.getElementById("btnIFC").onclick = () => {
-            document.getElementById("rightFrame").src = "ifc.html";
-            document.getElementById("noAddOns").style.display = "none";
-          };
-          addons = true;
-        }
-      } catch {}
-
-      // PDF
-      try {
-        const pdfRes = await fetch("DOC_file.pdf");
-        if (pdfRes.ok) {
-          document.getElementById("btnPDF").disabled = false;
-          document.getElementById("btnPDF").onclick = () => {
-            document.getElementById("rightFrame").src = "pdf.html";
-            document.getElementById("noAddOns").style.display = "none";
-          };
-          addons = true;
-        }
-      } catch {}
-
-      // External Model (Sketchfab / Autodesk Viewer link)
-      const modelLink = await loadText("model_link.txt");
-      if (modelLink) {
-        document.getElementById("btnModel").disabled = false;
-        document.getElementById("btnModel").onclick = () => {
-          document.getElementById("rightFrame").src = "model.html";
-          document.getElementById("noAddOns").style.display = "none";
-        };
-        addons = true;
-      }
-
-      if (!addons) {
-        document.getElementById("rightFrame").style.display = "none";
-      }
+    // PDF
+    if(await fileExists("DOC_file.pdf")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open PDF";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="pdf.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
     }
 
-    init();
-  </script>
+    // DXF
+    if(await fileExists("DXF_file.dxf")){
+      const btn = document.createElement("button");
+      btn.textContent = "Open DXF";
+      btn.onclick = () => { viewer.innerHTML = '<iframe src="dxf.html"></iframe>'; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    // External model
+    const modelText = await fetch("model_link.txt").then(r=>r.text()).catch(()=>"");
+    if(modelText.trim()){
+      const btn = document.createElement("button");
+      btn.textContent = "External Model";
+      btn.onclick = () => { viewer.innerHTML = `<iframe src="${modelText.trim()}"></iframe>`; empty.style.display='none'; };
+      toolbar.appendChild(btn);
+      added = true;
+    }
+
+    if(!added) toolbar.style.display='none';
+  }
+
+  init();
+</script>
+
 </body>
 </html>
