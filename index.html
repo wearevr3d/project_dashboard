@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Dashboard</title>
-    <!-- Add the Permissions Policy to silence the WebXR warning -->
-    <meta http-equiv="Permissions-Policy" content="xr-spatial-tracking=(self)">
     <link rel="stylesheet" href="styles.css">
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
@@ -68,27 +66,15 @@
         </div>
     </main>
 
-    <!--
-        **************************************************************
-        LOAD ALL EXTERNAL LIBRARIES FIRST
-        Your main.js depends on these, so they MUST be loaded before it.
-        **************************************************************
-    -->
-    <!-- THREE.js - Core 3D Library -->
+    <!-- Your main.js script -->
+    <script src="main.js"></script>
+    <!-- THREE.js -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-    <!-- Web-IFC-Three.js - IFC.js for Three.js -->
+    <!-- Web-IFC-Three.js -->
     <script src="https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.34/dist/web-ifc-three.js"></script>
     <!-- Autodesk Viewer API -->
     <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js"></script>
     <!-- PDF.js worker -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
-
-    <!--
-        **************************************************************
-        LOAD YOUR CUSTOM SCRIPT LAST
-        This script uses all the libraries above, so it must be loaded after them.
-        **************************************************************
-    -->
-    <script src="main.js"></script>
 </body>
 </html>
