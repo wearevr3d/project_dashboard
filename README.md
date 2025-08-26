@@ -1,6 +1,6 @@
 #  Project Dashboard Prototype
 
-An interactive split-screen web dashboard displaying a panoramic (Panoee or Matterport) virtual tour on the left and interchangeable 3D/BIM, PDF, DXF, or external model viewers on the right. Built as a modular, open-source prototype with the aim of enabling seamless visualization and collaboration.
+An interactive split-screen web dashboard displaying a panoramic (Panoee or Matterport) virtual tour on the left and interchangeable 3D/BIM, PDF, DXF, or external 3D model viewers on the right. Built as a modular, open-source prototype with the aim of enabling seamless visualization and collaboration.
 
 ---
 
@@ -13,7 +13,7 @@ This project delivers a modular dashboard tool that:
   - **IFC/BIM models** using a local `web-ifc-viewer` build,
   - **PDF documents**,
   - **DXF files**,
-  - or **3D model links** (e.g., Sketchfab),
+  - or **3D model links** (e.g., Sketchfab, AutodeskViewer etc),
     based on the presence of local files or provided links.
 - Is fully **hostable via GitHub Pages or Netlify** for easy internal sharing.
 
