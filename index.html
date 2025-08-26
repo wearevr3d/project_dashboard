@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>3D & Docs Dashboard</title>
+<title>Dashboard</title>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
   #container { display: flex; height: 100vh; width: 100vw; }
   #leftPanel, #rightPanel { flex-grow: 1; overflow: hidden; height: 100%; }
-  #divider {
-    width: 5px; cursor: ew-resize; background-color: #ccc; z-index: 10;
-  }
+  #divider { width: 5px; cursor: ew-resize; background-color: #ccc; z-index: 10; }
   iframe { width: 100%; height: 100%; border: none; }
   #toolbar { background: #f5f5f5; padding: 5px; display: flex; gap: 10px; }
   #viewer { flex: 1; }
   #empty { display: flex; align-items: center; justify-content: center; flex: 1; font-style: italic; color: #888; }
+  button { padding: 5px 10px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -36,21 +35,20 @@
   const divider = document.getElementById('divider');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
-
   let isDragging = false;
 
-  divider.addEventListener('mousedown', (e) => { isDragging = true; });
-  window.addEventListener('mouseup', (e) => { isDragging = false; });
+  divider.addEventListener('mousedown', () => isDragging = true);
+  window.addEventListener('mouseup', () => isDragging = false);
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     const totalWidth = window.innerWidth;
     const leftWidth = e.clientX;
     const rightWidth = totalWidth - leftWidth - divider.offsetWidth;
-    leftPanel.style.flex = '0 0 ' + leftWidth + 'px';
-    rightPanel.style.flex = '0 0 ' + rightWidth + 'px';
+    leftPanel.style.flex = `0 0 ${leftWidth}px`;
+    rightPanel.style.flex = `0 0 ${rightWidth}px`;
   });
 
-  // ----------------- Dashboard logic -----------------
+  // ----------------- Helper -----------------
   async function fileExists(url) {
     try {
       const res = await fetch(url, { method: 'HEAD' });
@@ -58,15 +56,23 @@
     } catch { return false; }
   }
 
+  function createIframe(src) {
+    const frame = document.createElement('iframe');
+    frame.src = src;
+    frame.style.width = '100%';
+    frame.style.height = '100%';
+    return frame;
+  }
+
+  // ----------------- Dashboard -----------------
   async function init() {
     const toolbar = document.getElementById("toolbar");
     const viewer = document.getElementById("viewer");
     const empty = document.getElementById("empty");
 
     // Load Virtual Tour
-    const vtText = await fetch("vt_link.txt").then(r=>r.text()).catch(()=>"");
-    if (vtText.trim()) document.getElementById("vtFrame").src = vtText.trim();
-    else document.getElementById("vtFrame").srcdoc = "<p style='text-align:center;margin-top:20px;'>No Virtual Tour</p>";
+    const vtText = await fetch("vt_link.txt").then(r=>r.text()).catch(()=> "");
+    document.getElementById("vtFrame").src = vtText.trim() || "";
 
     let added = false;
 
@@ -74,7 +80,11 @@
     if(await fileExists("BIM_file.ifc")){
       const btn = document.createElement("button");
       btn.textContent = "Open IFC";
-      btn.onclick = () => { viewer.innerHTML = '<iframe src="ifc.html"></iframe>'; empty.style.display='none'; };
+      btn.onclick = () => {
+        viewer.innerHTML = "";
+        viewer.appendChild(createIframe("ifc.html"));
+        empty.style.display='none';
+      };
       toolbar.appendChild(btn);
       added = true;
     }
@@ -83,7 +93,11 @@
     if(await fileExists("DOC_file.pdf")){
       const btn = document.createElement("button");
       btn.textContent = "Open PDF";
-      btn.onclick = () => { viewer.innerHTML = '<iframe src="pdf.html"></iframe>'; empty.style.display='none'; };
+      btn.onclick = () => {
+        viewer.innerHTML = "";
+        viewer.appendChild(createIframe("pdf.html"));
+        empty.style.display='none';
+      };
       toolbar.appendChild(btn);
       added = true;
     }
@@ -92,17 +106,25 @@
     if(await fileExists("DXF_file.dxf")){
       const btn = document.createElement("button");
       btn.textContent = "Open DXF";
-      btn.onclick = () => { viewer.innerHTML = '<iframe src="dxf.html"></iframe>'; empty.style.display='none'; };
+      btn.onclick = () => {
+        viewer.innerHTML = "";
+        viewer.appendChild(createIframe("dxf.html"));
+        empty.style.display='none';
+      };
       toolbar.appendChild(btn);
       added = true;
     }
 
-    // External model
-    const modelText = await fetch("model_link.txt").then(r=>r.text()).catch(()=>"");
+    // External Model
+    const modelText = await fetch("model_link.txt").then(r=>r.text()).catch(()=> "");
     if(modelText.trim()){
       const btn = document.createElement("button");
       btn.textContent = "External Model";
-      btn.onclick = () => { viewer.innerHTML = `<iframe src="${modelText.trim()}"></iframe>`; empty.style.display='none'; };
+      btn.onclick = () => {
+        viewer.innerHTML = "";
+        viewer.appendChild(createIframe(modelText.trim()));
+        empty.style.display='none';
+      };
       toolbar.appendChild(btn);
       added = true;
     }
