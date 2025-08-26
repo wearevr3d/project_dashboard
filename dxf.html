@@ -1,50 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DXF Viewer</title>
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
-    #viewer { width: 100%; height: 100%; overflow: hidden; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DXF Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #toolbar {
+            background: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+        button {
+            padding: 8px 12px;
+            margin: 0 5px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #layers-panel {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 200px;
+        }
+        #dxf-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+        }
+        #dxf-canvas {
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .layer-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .layer-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-  <div id="viewer"></div>
+    <div id="toolbar">
+        <button id="toggle-layers">Layers</button>
+        <button id="zoom-fit">Zoom to Fit</button>
+        <button id="pan-mode">Pan</button>
+        <button id="measure">Measure</button>
+        <button id="download-dxf">Download</button>
+    </div>
+    <div id="layers-panel" style="display: none;">
+        <h3>Layers</h3>
+        <div class="layer-item">
+            <div class="layer-color" style="background: #e74c3c;"></div>
+            <span>Walls</span>
+        </div>
+        <div class="layer-item">
+            <div class="layer-color" style="background: #3498db;"></div>
+            <span>Doors</span>
+        </div>
+        <div class="layer-item">
+            <div class="layer-color" style="background: #2ecc71;"></div>
+            <span>Windows</span>
+        </div>
+        <div class="layer-item">
+            <div class="layer-color" style="background: #f39c12;"></div>
+            <span>Dimensions</span>
+        </div>
+    </div>
+    <div id="dxf-container">
+        <canvas id="dxf-canvas"></canvas>
+    </div>
 
-  <!-- DXF Parser + Renderer -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.0.0/dist/dxf-parser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-dxf@0.0.17/dist/three-dxf.min.js"></script>
-
-  <script>
-    async function loadDXF() {
-      try {
-        const response = await fetch('DXF_file.dxf');
-        const text = await response.text();
-
-        const parser = new window.DxfParser();
-        const dxf = parser.parseSync(text);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('viewer').appendChild(renderer.domElement);
-
-        new window.ThreeDxf.Viewer(dxf, renderer, camera, scene);
-        camera.position.z = 100;
-
-        function animate() {
-          requestAnimationFrame(animate);
-          renderer.render(scene, camera);
-        }
-        animate();
-      } catch (e) {
-        console.error("Error loading DXF file", e);
-      }
-    }
-    loadDXF();
-  </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('dxf-canvas');
+            const container = document.getElementById('dxf-container');
+            const toggleLayersBtn = document.getElementById('toggle-layers');
+            const layersPanel = document.getElementById('layers-panel');
+            const zoomFitBtn = document.getElementById('zoom-fit');
+            const panModeBtn = document.getElementById('pan-mode');
+            const measureBtn = document.getElementById('measure');
+            const downloadBtn = document.getElementById('download-dxf');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = container.clientWidth - 40;
+                canvas.height = container.clientHeight - 40;
+                drawDXFContent();
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            // Get the DXF file path from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const dxfFile = urlParams.get('file') || 'DXF_file.dxf';
+            
+            // Toolbar functionality
+            toggleLayersBtn.addEventListener('click', function() {
+                layersPanel.style.display = layersPanel.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            zoomFitBtn.addEventListener('click', function() {
+                console.log('Zoom to fit');
+                // In a real implementation, this would adjust the view to fit all content
+            });
+            
+            panModeBtn.addEventListener('click', function() {
+                console.log('Pan mode activated');
+                // In a real implementation, this would enable panning
+            });
+            
+            measureBtn.addEventListener('click', function() {
+                console.log('Measure tool activated');
+                // In a real implementation, this would enable measurement
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                alert(`In a real implementation, this would download ${dxfFile}`);
+            });
+            
+            // Draw DXF content
+            function drawDXFContent() {
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Clear canvas
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw title
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('DXF Drawing Preview', width / 2, 30);
+                ctx.font = '14px Arial';
+                ctx.fillText(`File: ${dxfFile}`, width / 2, 60);
+                
+                // Draw a simple floor plan representation
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const planWidth = Math.min(width, height) * 0.7;
+                const planHeight = planWidth * 0.6;
+                
+                // Outer walls
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(
+                    centerX - planWidth / 2,
+                    centerY - planHeight / 2,
+                    planWidth,
+                    planHeight
+                );
+                
+                // Inner walls
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX - planWidth / 2, centerY - planHeight / 4);
+                ctx.lineTo(centerX + planWidth / 4, centerY - planHeight / 4);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX + planWidth / 4, centerY - planHeight / 2);
+                ctx.lineTo(centerX + planWidth / 4, centerY + planHeight / 2);
+                ctx.stroke();
+                
+                // Doors
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                // Door 1
+                ctx.beginPath();
+                ctx.arc(
+                    centerX - planWidth / 2,
+                    centerY - planHeight / 4 - 20,
+                    15,
+                    -Math.PI / 2,
+                    Math.PI / 2
+                );
+                ctx.stroke();
+                
+                // Door 2
+                ctx.beginPath();
+                ctx.arc(
+                    centerX + planWidth / 4 - 20,
+                    centerY - planHeight / 2,
+                    15,
+                    0,
+                    Math.PI
+                );
+                ctx.stroke();
+                
+                // Windows
+                ctx.strokeStyle = '#2ecc71';
+                ctx.lineWidth = 2;
+                // Window 1
+                ctx.strokeRect(
+                    centerX - planWidth / 4,
+                    centerY - planHeight / 2 - 5,
+                    60,
+                    10
+                );
+                
+                // Window 2
+                ctx.strokeRect(
+                    centerX + planWidth / 2 - 5,
+                    centerY,
+                    10,
+                    60
+                );
+                
+                // Dimensions
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 1;
+                // Horizontal dimension
+                ctx.beginPath();
+                ctx.moveTo(centerX - planWidth / 2, centerY + planHeight / 2 + 30);
+                ctx.lineTo(centerX + planWidth / 2, centerY + planHeight / 2 + 30);
+                ctx.stroke();
+                
+                // Vertical dimension
+                ctx.beginPath();
+                ctx.moveTo(centerX + planWidth / 2 + 30, centerY - planHeight / 2);
+                ctx.lineTo(centerX + planWidth / 2 + 30, centerY + planHeight / 2);
+                ctx.stroke();
+                
+                // Footer text
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '12px Arial';
+                ctx.fillText('(In a real implementation, this would render the actual DXF content)', width / 2, height - 20);
+            }
+            
+            // Initial draw
+            drawDXFContent();
+        });
+    </script>
 </body>
 </html>
-
