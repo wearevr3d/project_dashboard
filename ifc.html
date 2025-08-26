@@ -12,7 +12,7 @@
 <div id="viewer-container"></div>
 
 <script type="module">
-  import { IfcViewerAPI } from 'https://cdn.jsdelivr.net/npm/web-ifc-viewer@latest/dist/IFCviewerAPI.module.js';
+  import { IfcViewerAPI } from 'https://unpkg.com/web-ifc-viewer@0.0.50/dist/IFCviewerAPI.module.js';
 
   // Create the viewer
   const container = document.getElementById('viewer-container');
@@ -20,38 +20,18 @@
   viewer.grid.setGrid();
   viewer.axes.setAxes();
 
-  // Load IFC file
-  const ifcFile = 'BIM_file.ifc'; // Must exist in same folder
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.ifc';
-  input.style.display = 'none';
-  document.body.appendChild(input);
+  // Load local IFC file automatically
+  const ifcFile = 'BIM_file.ifc'; // must exist in same folder
 
-  input.addEventListener('change', async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    await viewer.IFC.loadIfcUrl(url);
-  });
-
-  // Auto-load local BIM_file.ifc if exists
   fetch(ifcFile, { method: 'HEAD' })
     .then(res => {
       if(res.ok){
-        input.files = createFileList(ifcFile); // trick to auto-load local file
         viewer.IFC.loadIfcUrl(ifcFile);
+      } else {
+        console.warn('BIM_file.ifc not found.');
       }
     })
     .catch(() => console.warn('BIM_file.ifc not found.'));
-
-  // Helper for auto-loading
-  function createFileList(fileName) {
-    const dataTransfer = new DataTransfer();
-    const file = new File([''], fileName);
-    dataTransfer.items.add(file);
-    return dataTransfer.files;
-  }
 
 </script>
 </body>
