@@ -2,138 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>3D & Docs Dashboard</title>
+<title>Dashboard Viewer</title>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
-  #container { display: flex; height: 100vh; width: 100vw; }
-  #leftPanel, #rightPanel { flex-grow: 1; overflow: hidden; height: 100%; }
-  #divider { width: 5px; cursor: ew-resize; background-color: #ccc; z-index: 10; }
+  #container { display: flex; width: 100%; height: 100%; }
+  #left-panel { flex: 1; }
+  #right-panel { flex: 1; border-left: 1px solid #ccc; }
   iframe { width: 100%; height: 100%; border: none; }
-  #toolbar { background: #f5f5f5; padding: 5px; display: flex; gap: 10px; }
-  #viewer { flex: 1; }
-  #empty { display: flex; align-items: center; justify-content: center; flex: 1; font-style: italic; color: #888; }
-  button { padding: 5px 10px; cursor: pointer; }
+  #buttons { position: absolute; top: 10px; right: 10px; z-index: 10; }
+  #buttons button { margin: 0 5px; }
 </style>
 </head>
 <body>
-
 <div id="container">
-  <div id="leftPanel">
-    <iframe id="vtFrame"></iframe>
+  <div id="left-panel">
+    <iframe id="left-panel-iframe" src=""></iframe>
   </div>
-
-  <div id="divider"></div>
-
-  <div id="rightPanel">
-    <div id="toolbar"></div>
-    <div id="viewer"><div id="empty">No add-ons yet</div></div>
+  <div id="right-panel">
+    <iframe id="right-panel-iframe" src=""></iframe>
   </div>
 </div>
 
+<div id="buttons">
+  <button onclick="loadRightPanel('ifc.html')">Open IFC</button>
+  <button onclick="loadRightPanel('pdf.html')">Open PDF</button>
+  <button onclick="loadRightPanel('dxf.html')">Open DXF</button>
+  <button onclick="loadRightPanel('model.html')">Open 3D Model</button>
+</div>
+
 <script>
-  // ----------------- Resizable divider -----------------
-  const divider = document.getElementById('divider');
-  const leftPanel = document.getElementById('leftPanel');
-  const rightPanel = document.getElementById('rightPanel');
-  let isDragging = false;
+  // Load left panel URL from vt_link.txt
+  fetch('vt_link.txt')
+    .then(res => res.text())
+    .then(url => {
+      const leftFrame = document.getElementById('left-panel-iframe');
+      leftFrame.src = url.trim();
+    });
 
-  divider.addEventListener('mousedown', () => isDragging = true);
-  window.addEventListener('mouseup', () => isDragging = false);
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const totalWidth = window.innerWidth;
-    const leftWidth = e.clientX;
-    const rightWidth = totalWidth - leftWidth - divider.offsetWidth;
-    leftPanel.style.flex = `0 0 ${leftWidth}px`;
-    rightPanel.style.flex = `0 0 ${rightWidth}px`;
-  });
+  // Load model URL from model_link.txt (optional)
+  let modelURL = '';
+  fetch('model_link.txt')
+    .then(res => res.text())
+    .then(url => { modelURL = url.trim(); });
 
-  // ----------------- Helper -----------------
-  async function fileExists(url) {
-    try {
-      const res = await fetch(url, { method: 'HEAD' });
-      return res.ok;
-    } catch { return false; }
+  function loadRightPanel(url) {
+    const rightFrame = document.getElementById('right-panel-iframe');
+    
+    if(url === 'model.html' && modelURL){
+      rightFrame.src = modelURL;
+    } else {
+      rightFrame.src = url;
+    }
   }
-
-  function createIframe(src) {
-    const frame = document.createElement('iframe');
-    frame.src = src;
-    frame.style.width = '100%';
-    frame.style.height = '100%';
-    return frame;
-  }
-
-  // ----------------- Dashboard -----------------
-  async function init() {
-    const toolbar = document.getElementById("toolbar");
-    const viewer = document.getElementById("viewer");
-    const empty = document.getElementById("empty");
-
-    // Load Virtual Tour
-    const vtText = await fetch("vt_link.txt").then(r=>r.text()).catch(()=> "");
-    document.getElementById("vtFrame").src = vtText.trim() || "";
-
-    let added = false;
-
-    // IFC
-    if(await fileExists("BIM_file.ifc")){
-      const btn = document.createElement("button");
-      btn.textContent = "Open IFC";
-      btn.onclick = () => {
-        viewer.innerHTML = "";
-        viewer.appendChild(createIframe("ifc.html"));
-        empty.style.display='none';
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // PDF
-    if(await fileExists("DOC_file.pdf")){
-      const btn = document.createElement("button");
-      btn.textContent = "Open PDF";
-      btn.onclick = () => {
-        viewer.innerHTML = "";
-        viewer.appendChild(createIframe("pdf.html"));
-        empty.style.display='none';
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // DXF
-    if(await fileExists("DXF_file.dxf")){
-      const btn = document.createElement("button");
-      btn.textContent = "Open DXF";
-      btn.onclick = () => {
-        viewer.innerHTML = "";
-        viewer.appendChild(createIframe("dxf.html"));
-        empty.style.display='none';
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    // External Model
-    const modelText = await fetch("model_link.txt").then(r=>r.text()).catch(()=> "");
-    if(modelText.trim()){
-      const btn = document.createElement("button");
-      btn.textContent = "External Model";
-      btn.onclick = () => {
-        viewer.innerHTML = "";
-        viewer.appendChild(createIframe(modelText.trim()));
-        empty.style.display='none';
-      };
-      toolbar.appendChild(btn);
-      added = true;
-    }
-
-    if(!added) toolbar.style.display='none';
-  }
-
-  init();
 </script>
-
 </body>
 </html>
