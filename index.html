@@ -331,6 +331,21 @@
             gap: 10px;
             margin-top: 20px;
         }
+        
+        .auto-load-notice {
+            padding: 8px 12px;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .auto-load-notice i {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -372,7 +387,7 @@
                         <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="#" data-type="pdf" data-file="as_built/floor_plan.pdf"><i class="fas fa-layer-group"></i> Floor Plan</a>
+                        <a href="#" data-type="pdf" data-file="as_built/floor_plan.pdf" data-tour-specific="true"><i class="fas fa-layer-group"></i> Floor Plan</a>
                         <a href="#" data-type="pointcloud" data-file="as_built/pointcloud.las"><i class="fas fa-cloud"></i> 3D Model</a>
                         <a href="#" data-type="ifc" data-file="as_built/bim_model.ifc"><i class="fas fa-cube"></i> BIM Model</a>
                     </div>
@@ -443,6 +458,8 @@
         // Global variables
         let matterportTours = {};
         let currentUploadFolder = '';
+        let currentTourId = '';
+        let autoLoadFloorPlan = false;
 
         // Resizable divider functionality
         const divider = document.querySelector('.divider');
@@ -503,7 +520,9 @@
                         matterportTours[tourId] = {
                             url: url.trim(),
                             title: `Tour from ${date}`,
-                            date: date
+                            date: date,
+                            // Generate the PDF file path based on the tour date
+                            floorPlanPdf: `as_built/floor_plan_${date.replace(/\//g, '_')}.pdf`
                         };
                         
                         // Add to dropdown
@@ -562,6 +581,7 @@
             try {
                 const tour = matterportTours[tourId];
                 if (tour) {
+                    currentTourId = tourId;
                     const virtualTourContainer = document.querySelector('.virtual-tour');
                     virtualTourContainer.innerHTML = `
                         <iframe src="${tour.url}" allow="xr-spatial-tracking" allowfullscreen></iframe>
@@ -570,6 +590,11 @@
                             <div>${tour.date}</div>
                         </div>
                     `;
+                    
+                    // Auto-load the floor plan if the flag is set
+                    if (autoLoadFloorPlan) {
+                        loadFile(tour.floorPlanPdf, 'pdf', `Floor Plan - ${tour.date}`, 'As-built', false);
+                    }
                 } else {
                     throw new Error('Tour not found');
                 }
@@ -647,6 +672,7 @@
                     const type = this.getAttribute('data-type');
                     const file = this.getAttribute('data-file');
                     const allowUpload = this.getAttribute('data-upload') === 'true';
+                    const isTourSpecific = this.getAttribute('data-tour-specific') === 'true';
                     const parentDropdown = this.closest('.dropdown');
                     const dropdownBtn = parentDropdown.querySelector('.dropdown-btn');
                     const section = dropdownBtn.textContent.trim();
@@ -667,7 +693,12 @@
                         document.getElementById('upload-folder-name').textContent = currentUploadFolder;
                         document.getElementById('upload-modal').style.display = 'flex';
                     } else {
-                        loadFile(file, type, file.split('/').pop(), section, false);
+                        // For tour-specific files, use the current tour's file
+                        let fileToLoad = file;
+                        if (isTourSpecific && currentTourId && matterportTours[currentTourId]) {
+                            fileToLoad = matterportTours[currentTourId].floorPlanPdf;
+                        }
+                        loadFile(fileToLoad, type, fileToLoad.split('/').pop(), section, false);
                     }
                 });
             });
@@ -741,6 +772,16 @@
                             <iframe src="${filePath}#toolbar=0" style="flex: 1; border: none;"></iframe>
                         </div>
                     `;
+                    
+                    // Add notice about auto-loading if this is a floor plan
+                    if (fileName.includes('floor_plan')) {
+                        viewer.innerHTML += `
+                            <div class="auto-load-notice">
+                                <i class="fas fa-info-circle"></i>
+                                <span>This floor plan will automatically load when you select its associated virtual tour</span>
+                            </div>
+                        `;
+                    }
                     
                     let actionButtonsHTML = `<div class="action-buttons">`;
                     if (showUpload) {
@@ -905,6 +946,9 @@
                     this.style.display = 'none';
                 }
             });
+            
+            // Enable auto-loading of floor plans when tours are selected
+            autoLoadFloorPlan = true;
         });
     </script>
 
