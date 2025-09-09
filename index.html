@@ -27,7 +27,7 @@
             color: white;
             padding: 12px 20px;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
         }
 
@@ -40,6 +40,40 @@
 
         .logo-icon {
             margin-right: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .header-date {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .project-name-editable {
+            background: transparent;
+            border: 1px solid transparent;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: right;
+            max-width: 300px;
+        }
+
+        .project-name-editable:hover {
+            border: 1px dashed rgba(255, 255, 255, 0.5);
+        }
+
+        .project-name-editable:focus {
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
         }
 
         .container {
@@ -376,9 +410,9 @@
             <i class="fas fa-project-diagram logo-icon"></i>
             <span>Project Dashboard</span>
         </div>
-        <div class="header-info">
-            <i class="fas fa-calendar-alt"></i>
-            <span id="current-date"></span>
+        <div class="header-right">
+            <div class="header-date" id="current-date"></div>
+            <input type="text" class="project-name-editable" value="Construction Project Alpha" id="project-name">
         </div>
     </div>
 
@@ -421,7 +455,7 @@
                         <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="#" data-type="pdf" data-file="reference/floor_plan.pdf" data-upload="true"><i class="fas fa-layer-group"></i> Floor Plan</a>
+                        <a href="#" data-type="pdf" data-file="reference/design_plan.pdf" data-upload="true"><i class="fas fa-layer-group"></i> Design Plan</a>
                         <a href="#" data-type="googlesheet" data-file="reference/timeline.csv" data-upload="true"><i class="fas fa-chart-line"></i> Project Timeline</a>
                         <a href="#" data-type="ifc" data-file="reference/bim_model.ifc" data-upload="true"><i class="fas fa-cube"></i> BIM Model</a>
                     </div>
@@ -429,13 +463,14 @@
 
                 <div class="dropdown">
                     <button class="dropdown-btn">
-                        <i class="fas fa-chart-bar"></i> Reports & Analysis
+                        <i class="fas fa-chart-bar"></i> Reports
                         <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="#" data-type="pdf" data-file="reports/progress_analysis.pdf"><i class="fas fa-traffic-light"></i> Progress Analysis</a>
-                        <a href="#" data-type="pdf" data-file="reports/deviation_analysis.pdf"><i class="fas fa-fire"></i> Deviation Analysis</a>
+                        <a href="#" data-type="pdf" data-file="reports/deviation_report.pdf"><i class="fas fa-fire"></i> Deviation Report</a>
+                        <a href="#" data-type="pdf" data-file="reports/progress_report.pdf"><i class="fas fa-traffic-light"></i> Progress Report</a>
                         <a href="#" data-type="ifc" data-file="reports/clash_detection.ifc"><i class="fas fa-search"></i> Clash Detection</a>
+                        <a href="#" data-type="pdf" data-file="reports/change_detection.pdf"><i class="fas fa-code-compare"></i> Change Detection</a>
                     </div>
                 </div>
 
@@ -503,7 +538,7 @@
         }
 
         function stopResize() {
-            isResizing = false;
+            isRepositioning = false;
             document.removeEventListener('mousemove', handleResize);
             document.removeEventListener('mouseup', stopResize);
         }
@@ -915,6 +950,14 @@
             document.getElementById('upload-modal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     this.style.display = 'none';
+                }
+            });
+
+            // Make project name editable
+            const projectNameInput = document.getElementById('project-name');
+            projectNameInput.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.value = 'Construction Project Alpha';
                 }
             });
         });
