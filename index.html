@@ -406,6 +406,23 @@
         .button-icon {
             margin-right: 6px;
         }
+        
+        .future-feature {
+            color: #bdc3c7 !important;
+            cursor: not-allowed !important;
+        }
+        
+        .future-feature:hover {
+            background-color: transparent !important;
+            color: #bdc3c7 !important;
+        }
+        
+        .coming-soon {
+            font-size: 11px;
+            color: #95a5a6;
+            margin-left: 8px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -473,8 +490,11 @@
                     <div class="dropdown-content">
                         <a href="#" data-type="pdf" data-file="reports/deviation_report.pdf"><i class="fas fa-fire"></i> Deviation Report</a>
                         <a href="#" data-type="pdf" data-file="reports/progress_report.pdf"><i class="fas fa-traffic-light"></i> Progress Report</a>
-                        <a href="#" data-type="ifc" data-file="reports/clash_detection.ifc"><i class="fas fa-search"></i> Clash Detection</a>
-                        <a href="#" data-type="pdf" data-file="reports/change_detection.pdf"><i class="fas fa-code-compare"></i> Change Detection</a>
+                        <a href="#" data-type="pdf" data-file="reports/volumetric_report.pdf"><i class="fas fa-cube"></i> Volumetric Report</a>
+                        <a href="#" data-type="pdf" data-file="reports/visual_inventory_report.pdf"><i class="fas fa-images"></i> Visual Inventory Report</a>
+                        <a href="#" data-type="pdf" data-file="reports/hazard_report.pdf"><i class="fas fa-exclamation-triangle"></i> Hazard Report</a>
+                        <a href="#" class="future-feature"><i class="fas fa-search"></i> Clash Detection<span class="coming-soon">Coming Soon</span></a>
+                        <a href="#" class="future-feature"><i class="fas fa-code-compare"></i> Change Detection<span class="coming-soon">Coming Soon</span></a>
                     </div>
                 </div>
 
@@ -740,6 +760,13 @@
             const dropdownItems = document.querySelectorAll('.dropdown-content a');
             dropdownItems.forEach(item => {
                 item.addEventListener('click', function(e) {
+                    // Prevent action for future features
+                    if (this.classList.contains('future-feature')) {
+                        e.preventDefault();
+                        showNotification("This feature is coming soon!");
+                        return;
+                    }
+                    
                     e.preventDefault();
                     const type = this.getAttribute('data-type');
                     const file = this.getAttribute('data-file');
