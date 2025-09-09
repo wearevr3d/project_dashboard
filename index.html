@@ -251,7 +251,7 @@
             border-bottom: 1px solid #e9ecef;
         }
 
-        .download-btn {
+        .download-btn, .upload-btn {
             margin-top: 10px;
             padding: 6px 12px;
             background: #2c3e50;
@@ -263,7 +263,7 @@
             align-items: center;
         }
 
-        .download-btn i {
+        .download-btn i, .upload-btn i {
             margin-right: 5px;
         }
         
@@ -281,6 +281,15 @@
             border: 1px solid #ddd;
             background: #2c3e50;
             color: white;
+        }
+
+        /* Action buttons container */
+        .action-buttons {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
         }
     </style>
 </head>
@@ -330,7 +339,7 @@
                     </button>
                     <div class="dropdown-content">
                         <a href="#" data-type="pdf" data-file="as_built/floor_plan.pdf"><i class="fas fa-layer-group"></i> Floor Plan</a>
-                        <a href="#" data-type="pointcloud" data-file="as_built/pointcloud.las"><i class="fas fa-cloud"></i> 3D Model (Point Cloud)</a>
+                        <a href="#" data-type="pointcloud" data-file="as_built/pointcloud.las"><i class="fas fa-cloud"></i> 3D Model</a>
                         <a href="#" data-type="ifc" data-file="as_built/bim_model.ifc"><i class="fas fa-cube"></i> BIM Model</a>
                     </div>
                 </div>
@@ -348,16 +357,16 @@
                     </div>
                 </div>
 
-                <!-- Compare Dropdown -->
+                <!-- Reports & Analysis Dropdown -->
                 <div class="dropdown">
                     <button class="dropdown-btn">
-                        <i class="fas fa-code-compare"></i> Compare
+                        <i class="fas fa-chart-bar"></i> Reports & Analysis
                         <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="#" data-type="pdf" data-file="compare/progress_analysis.pdf"><i class="fas fa-traffic-light"></i> Progress Analysis</a>
-                        <a href="#" data-type="pdf" data-file="compare/deviation_analysis.pdf"><i class="fas fa-fire"></i> Deviation Analysis</a>
-                        <a href="#" data-type="ifc" data-file="compare/clash_detection.ifc"><i class="fas fa-search"></i> Clash Detection</a>
+                        <a href="#" data-type="pdf" data-file="reports/progress_analysis.pdf"><i class="fas fa-traffic-light"></i> Progress Analysis</a>
+                        <a href="#" data-type="pdf" data-file="reports/deviation_analysis.pdf"><i class="fas fa-fire"></i> Deviation Analysis</a>
+                        <a href="#" data-type="ifc" data-file="reports/clash_detection.ifc"><i class="fas fa-search"></i> Clash Detection</a>
                     </div>
                 </div>
 
@@ -485,6 +494,19 @@
             document.body.removeChild(link);
         }
 
+        // Upload file function
+        function uploadFile(fileInput, fileType) {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                showNotification(`Uploading ${file.name} as ${fileType} file...`);
+                // In a real implementation, you would handle the file upload here
+                // For now, we'll just simulate a successful upload
+                setTimeout(() => {
+                    showNotification(`Successfully uploaded ${file.name}`);
+                }, 1500);
+            }
+        }
+
         // NEW: Initialize Dropdowns and new navigation
         function initNewNavigation() {
             // Initialize dropdown menus
@@ -516,26 +538,16 @@
                     const type = this.getAttribute('data-type');
                     const file = this.getAttribute('data-file');
                     const allowUpload = this.getAttribute('data-upload') === 'true';
+                    const parentDropdown = this.closest('.dropdown');
+                    const dropdownBtn = parentDropdown.querySelector('.dropdown-btn');
+                    const section = dropdownBtn.textContent.trim();
 
                     if (allowUpload) {
-                        // For now, just show a message for upload items
-                        showNotification("Upload functionality will be implemented in the next phase.");
+                        // For Reference section, show upload option
+                        loadFile(file, type, file.split('/').pop(), section, true);
                     } else {
-                        // For now, just show a placeholder for non-PDF/IFC items
-                        if (type === 'pdf' || type === 'ifc') {
-                            loadFile(file, type, file.split('/').pop());
-                        } else {
-                            viewer.innerHTML = `
-                                <div style="padding: 20px; text-align: center;">
-                                    <i class="fas fa-cogs" style="font-size: 48px; color: #bdc3c7; margin-bottom: 20px;"></i>
-                                    <h3>Feature in Development</h3>
-                                    <p>The ${type} viewer for <strong>${file}</strong> will be implemented in the next phase.</p>
-                                    <button class="download-btn" onclick="downloadFile('${file}')">
-                                        <i class="fas fa-download"></i> Download File
-                                    </button>
-                                </div>
-                            `;
-                        }
+                        // For As-built and Reports sections, show download option
+                        loadFile(file, type, file.split('/').pop(), section, false);
                     }
                 });
             });
@@ -548,20 +560,41 @@
         }
 
         // MODIFIED loadFile function (simplified from your original code)
-        function loadFile(filePath, type, fileName = 'File') {
+        function loadFile(filePath, type, fileName = 'File', section, showUpload = false) {
             noContent.style.display = 'none';
             viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading file...</p></div>';
 
             // Check if file exists before trying to load it
             fileExists(filePath).then(exists => {
                 if (!exists) {
-                    viewer.innerHTML = `
+                    let contentHTML = `
                         <div class="no-content">
                             <i class="fas fa-exclamation-triangle"></i>
                             <h3>File Not Found</h3>
                             <p>The file "${filePath}" does not exist on the server.</p>
-                        </div>
                     `;
+                    
+                    // Add appropriate action button based on section
+                    if (showUpload) {
+                        contentHTML += `
+                            <div class="action-buttons">
+                                <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                                    <i class="fas fa-upload"></i> Upload File
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        contentHTML += `
+                            <div class="action-buttons">
+                                <button class="download-btn" onclick="downloadFile('${filePath}')">
+                                    <i class="fas fa-download"></i> Download Template
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    contentHTML += `</div>`;
+                    viewer.innerHTML = contentHTML;
                     return;
                 }
 
@@ -581,6 +614,23 @@
                             <iframe src="${filePath}#toolbar=0" style="flex: 1; border: none;"></iframe>
                         </div>
                     `;
+                    
+                    // Add action buttons at the bottom
+                    let actionButtonsHTML = `<div class="action-buttons">`;
+                    if (showUpload) {
+                        actionButtonsHTML += `
+                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                                <i class="fas fa-upload"></i> Upload New Version
+                            </button>
+                        `;
+                    }
+                    actionButtonsHTML += `
+                        <button class="download-btn" onclick="downloadFile('${filePath}')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>`;
+                    
+                    viewer.innerHTML += actionButtonsHTML;
                 } else if (type === 'ifc') {
                     viewer.innerHTML = `
                         <div style="display: flex; flex-direction: column; height: 100%;">
@@ -598,7 +648,48 @@
                             </div>
                         </div>
                     `;
+                    
+                    // Add action buttons at the bottom
+                    let actionButtonsHTML = `<div class="action-buttons">`;
+                    if (showUpload) {
+                        actionButtonsHTML += `
+                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                                <i class="fas fa-upload"></i> Upload New Version
+                            </button>
+                        `;
+                    }
+                    actionButtonsHTML += `
+                        <button class="download-btn" onclick="downloadFile('${filePath}')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>`;
+                    
+                    viewer.innerHTML += actionButtonsHTML;
                     initIFCViewer(); // Your existing IFC viewer function
+                } else {
+                    viewer.innerHTML = `
+                        <div style="padding: 20px; text-align: center;">
+                            <i class="fas fa-cogs" style="font-size: 48px; color: #bdc3c7; margin-bottom: 20px;"></i>
+                            <h3>Feature in Development</h3>
+                            <p>The ${type} viewer for <strong>${file}</strong> will be implemented in the next phase.</p>
+                    `;
+                    
+                    // Add appropriate action button
+                    let actionButtonsHTML = `<div class="action-buttons">`;
+                    if (showUpload) {
+                        actionButtonsHTML += `
+                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                                <i class="fas fa-upload"></i> Upload File
+                            </button>
+                        `;
+                    }
+                    actionButtonsHTML += `
+                        <button class="download-btn" onclick="downloadFile('${filePath}')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>`;
+                    
+                    viewer.innerHTML += actionButtonsHTML + `</div>`;
                 }
             });
         }
@@ -683,6 +774,21 @@
         document.addEventListener('DOMContentLoaded', function() {
             initNewNavigation(); // Initialize the new dropdown navigation
             document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+            
+            // Set up file upload handler
+            document.getElementById('file-upload').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    let fileType = 'unknown';
+                    
+                    if (fileExtension === 'pdf') fileType = 'pdf';
+                    else if (fileExtension === 'ifc') fileType = 'ifc';
+                    else if (fileExtension === 'csv') fileType = 'googlesheet';
+                    
+                    uploadFile(this, fileType);
+                }
+            });
         });
     </script>
 
