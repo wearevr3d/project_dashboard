@@ -332,19 +332,27 @@
             margin-top: 20px;
         }
         
-        .auto-load-notice {
-            padding: 8px 12px;
-            background: #3498db;
-            color: white;
-            border-radius: 4px;
-            margin-top: 10px;
-            font-size: 14px;
+        .default-gif {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
         }
         
-        .auto-load-notice i {
-            margin-right: 8px;
+        .default-gif img {
+            max-width: 100%;
+            max-height: 70%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .default-gif p {
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -421,10 +429,9 @@
             </div>
 
             <div class="viewer">
-                <div class="no-content">
-                    <i class="fas fa-folder-open"></i>
-                    <h3>No file selected</h3>
-                    <p>Select a file from the toolbar to view it</p>
+                <div class="default-gif">
+                    <img src="as_built/animation.gif" alt="Project Dashboard Animation">
+                    <p>Select a file from the toolbar to view project documents</p>
                 </div>
             </div>
         </div>
@@ -459,7 +466,6 @@
         let matterportTours = {};
         let currentUploadFolder = '';
         let currentTourId = '';
-        let autoLoadFloorPlan = false;
 
         // Resizable divider functionality
         const divider = document.querySelector('.divider');
@@ -489,7 +495,6 @@
 
         // File checking and viewer functionality
         const viewer = document.querySelector('.viewer');
-        const noContent = document.querySelector('.no-content');
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notification-text');
 
@@ -590,11 +595,6 @@
                             <div>${tour.date}</div>
                         </div>
                     `;
-                    
-                    // Auto-load the floor plan if the flag is set
-                    if (autoLoadFloorPlan) {
-                        loadFile(tour.floorPlanPdf, 'pdf', `Floor Plan - ${tour.date}`, 'As-built', false);
-                    }
                 } else {
                     throw new Error('Tour not found');
                 }
@@ -721,39 +721,23 @@
 
         // Load file function
         function loadFile(filePath, type, fileName = 'File', section, showUpload = false) {
-            noContent.style.display = 'none';
+            // Hide the default GIF and show loading state
+            document.querySelector('.default-gif').style.display = 'none';
             viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading file...</p></div>';
 
             // Check if file exists before trying to load it
             fileExists(filePath).then(exists => {
                 if (!exists) {
-                    let contentHTML = `
+                    viewer.innerHTML = `
                         <div class="no-content">
                             <i class="fas fa-exclamation-triangle"></i>
                             <h3>File Not Found</h3>
                             <p>The file "${filePath}" does not exist on the server.</p>
+                            <button class="download-btn" onclick="downloadFile('${filePath}')">
+                                <i class="fas fa-download"></i> Download Template
+                            </button>
+                        </div>
                     `;
-                    
-                    if (showUpload) {
-                        contentHTML += `
-                            <div class="action-buttons">
-                                <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
-                                    <i class="fas fa-upload"></i> Upload File
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        contentHTML += `
-                            <div class="action-buttons">
-                                <button class="download-btn" onclick="downloadFile('${filePath}')">
-                                    <i class="fas fa-download"></i> Download Template
-                                </button>
-                            </div>
-                        `;
-                    }
-                    
-                    contentHTML += `</div>`;
-                    viewer.innerHTML = contentHTML;
                     return;
                 }
 
@@ -772,32 +756,6 @@
                             <iframe src="${filePath}#toolbar=0" style="flex: 1; border: none;"></iframe>
                         </div>
                     `;
-                    
-                    // Add notice about auto-loading if this is a floor plan
-                    if (fileName.includes('floor_plan')) {
-                        viewer.innerHTML += `
-                            <div class="auto-load-notice">
-                                <i class="fas fa-info-circle"></i>
-                                <span>This floor plan will automatically load when you select its associated virtual tour</span>
-                            </div>
-                        `;
-                    }
-                    
-                    let actionButtonsHTML = `<div class="action-buttons">`;
-                    if (showUpload) {
-                        actionButtonsHTML += `
-                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
-                                <i class="fas fa-upload"></i> Upload New Version
-                            </button>
-                        `;
-                    }
-                    actionButtonsHTML += `
-                        <button class="download-btn" onclick="downloadFile('${filePath}')">
-                            <i class="fas fa-download"></i> Download
-                        </button>
-                    </div>`;
-                    
-                    viewer.innerHTML += actionButtonsHTML;
                 } else if (type === 'ifc') {
                     viewer.innerHTML = `
                         <div style="display: flex; flex-direction: column; height: 100%;">
@@ -815,22 +773,6 @@
                             </div>
                         </div>
                     `;
-                    
-                    let actionButtonsHTML = `<div class="action-buttons">`;
-                    if (showUpload) {
-                        actionButtonsHTML += `
-                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
-                                <i class="fas fa-upload"></i> Upload New Version
-                            </button>
-                        `;
-                    }
-                    actionButtonsHTML += `
-                        <button class="download-btn" onclick="downloadFile('${filePath}')">
-                            <i class="fas fa-download"></i> Download
-                        </button>
-                    </div>`;
-                    
-                    viewer.innerHTML += actionButtonsHTML;
                     initIFCViewer();
                 } else {
                     viewer.innerHTML = `
@@ -838,23 +780,11 @@
                             <i class="fas fa-cogs" style="font-size: 48px; color: #bdc3c7; margin-bottom: 20px;"></i>
                             <h3>Feature in Development</h3>
                             <p>The ${type} viewer for <strong>${filePath}</strong> will be implemented in the next phase.</p>
-                    `;
-                    
-                    let actionButtonsHTML = `<div class="action-buttons">`;
-                    if (showUpload) {
-                        actionButtonsHTML += `
-                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
-                                <i class="fas fa-upload"></i> Upload File
+                            <button class="download-btn" onclick="downloadFile('${filePath}')">
+                                <i class="fas fa-download"></i> Download
                             </button>
-                        `;
-                    }
-                    actionButtonsHTML += `
-                        <button class="download-btn" onclick="downloadFile('${filePath}')">
-                            <i class="fas fa-download"></i> Download
-                        </button>
-                    </div>`;
-                    
-                    viewer.innerHTML += actionButtonsHTML + `</div>`;
+                        </div>
+                    `;
                 }
             });
         }
@@ -946,9 +876,6 @@
                     this.style.display = 'none';
                 }
             });
-            
-            // Enable auto-loading of floor plans when tours are selected
-            autoLoadFloorPlan = true;
         });
     </script>
 
