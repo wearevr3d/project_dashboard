@@ -466,6 +466,7 @@
         let matterportTours = {};
         let currentUploadFolder = '';
         let currentTourId = '';
+        let fileViewActive = false;
 
         // Resizable divider functionality
         const divider = document.querySelector('.divider');
@@ -595,6 +596,11 @@
                             <div>${tour.date}</div>
                         </div>
                     `;
+                    
+                    // Reset to animation GIF if no file is actively being viewed
+                    if (!fileViewActive) {
+                        showDefaultGif();
+                    }
                 } else {
                     throw new Error('Tour not found');
                 }
@@ -607,6 +613,17 @@
                     </div>
                 `;
             }
+        }
+
+        // Show default GIF in the right panel
+        function showDefaultGif() {
+            viewer.innerHTML = `
+                <div class="default-gif">
+                    <img src="as_built/animation.gif" alt="Project Dashboard Animation">
+                    <p>Select a file from the toolbar to view project documents</p>
+                </div>
+            `;
+            fileViewActive = false;
         }
 
         // Download file function
@@ -722,6 +739,7 @@
             // Hide the default GIF and show loading state
             document.querySelector('.default-gif').style.display = 'none';
             viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading file...</p></div>';
+            fileViewActive = true;
 
             // Check if file exists before trying to load it
             fileExists(filePath).then(exists => {
