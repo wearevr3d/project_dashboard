@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Dashboard</title>
-    <!-- Add Permissions Policy to silence warnings -->
     <meta http-equiv="Permissions-Policy" content="xr-spatial-tracking=(self)">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -105,7 +104,6 @@
             background: #ecf0f1;
         }
 
-        /* NEW: Dropdown Styles */
         .toolbar {
             background: white;
             padding: 10px 15px;
@@ -169,7 +167,6 @@
         .dropdown.active .dropdown-content {
             display: block;
         }
-        /* END NEW Dropdown Styles */
 
         .viewer {
             flex: 1;
@@ -273,7 +270,6 @@
             height: 100%;
         }
 
-        /* Style for the tour select dropdown */
         #tour-select {
             margin-left: 15px;
             padding: 4px 8px;
@@ -283,13 +279,57 @@
             color: white;
         }
 
-        /* Action buttons container */
         .action-buttons {
             padding: 15px;
             background: #f8f9fa;
             border-top: 1px solid #e9ecef;
             display: flex;
             gap: 10px;
+        }
+        
+        .tour-info {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            border-radius: 4px;
+            z-index: 100;
+            font-size: 12px;
+        }
+        
+        .upload-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .upload-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .upload-modal h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .upload-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -310,18 +350,14 @@
             <div class="panel-header">
                 <i class="fas fa-vr-cardboard panel-icon"></i>
                 <span>Virtual Tour</span>
-                <!-- NEW: Dropdown for dated tours -->
                 <select id="tour-select">
-                    <option value="">-- Select a Date --</option>
-                    <option value="virtual_tours/tour_2023-10-26.html">Oct 26, 2023</option>
-                    <option value="virtual_tours/tour_2023-11-15.html">Nov 15, 2023</option>
-                    <option value="virtual_tours/tour_2023-12-01.html">Dec 1, 2023</option>
+                    <option value="">-- Select a Tour --</option>
                 </select>
             </div>
             <div class="virtual-tour">
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p>Select a virtual tour from the dropdown.</p>
+                    <p>Loading virtual tours...</p>
                 </div>
             </div>
         </div>
@@ -329,9 +365,7 @@
         <div class="divider"></div>
 
         <div class="panel right-panel">
-            <!-- NEW: Main Navigation Toolbar with Dropdowns -->
             <div class="toolbar">
-                <!-- As-built Dropdown -->
                 <div class="dropdown">
                     <button class="dropdown-btn">
                         <i class="fas fa-hard-hat"></i> As-built
@@ -344,7 +378,6 @@
                     </div>
                 </div>
 
-                <!-- Reference Dropdown -->
                 <div class="dropdown">
                     <button class="dropdown-btn">
                         <i class="fas fa-file-alt"></i> Reference
@@ -357,7 +390,6 @@
                     </div>
                 </div>
 
-                <!-- Reports & Analysis Dropdown -->
                 <div class="dropdown">
                     <button class="dropdown-btn">
                         <i class="fas fa-chart-bar"></i> Reports & Analysis
@@ -370,7 +402,6 @@
                     </div>
                 </div>
 
-                <!-- Upload Input (Hidden, will be used later for Reference section) -->
                 <input type="file" id="file-upload" style="display: none;" accept=".pdf,.csv,.ifc">
             </div>
 
@@ -389,6 +420,18 @@
         <span id="notification-text"></span>
     </div>
 
+    <div class="upload-modal" id="upload-modal">
+        <div class="upload-modal-content">
+            <h3>Upload File</h3>
+            <p>Select a file to upload to the <span id="upload-folder-name">reference</span> folder:</p>
+            <input type="file" id="upload-file-input">
+            <div class="upload-modal-buttons">
+                <button class="download-btn" onclick="document.getElementById('upload-modal').style.display = 'none'">Cancel</button>
+                <button class="upload-btn" onclick="handleFileUpload()">Upload</button>
+            </div>
+        </div>
+    </div>
+
     <div class="footer">
         <p>Project Dashboard &copy; 2023</p>
     </div>
@@ -396,6 +439,10 @@
     <script>
         // Set current date
         document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+
+        // Global variables
+        let matterportTours = {};
+        let currentUploadFolder = '';
 
         // Resizable divider functionality
         const divider = document.querySelector('.divider');
@@ -429,6 +476,66 @@
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notification-text');
 
+        // Load virtual tour links from file
+        async function loadTourLinks() {
+            try {
+                const response = await fetch('virtual_tours/vt_links.txt');
+                if (!response.ok) {
+                    throw new Error('Failed to load tour links');
+                }
+                
+                const text = await response.text();
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                
+                matterportTours = {};
+                const tourSelect = document.getElementById('tour-select');
+                
+                // Clear existing options except the first one
+                while (tourSelect.options.length > 1) {
+                    tourSelect.remove(1);
+                }
+                
+                // Parse each line and create tour entries
+                lines.forEach(line => {
+                    const [date, url] = line.split(' ');
+                    if (date && url) {
+                        const tourId = `tour_${date.replace(/\//g, '_')}`;
+                        matterportTours[tourId] = {
+                            url: url.trim(),
+                            title: `Tour from ${date}`,
+                            date: date
+                        };
+                        
+                        // Add to dropdown
+                        const option = document.createElement('option');
+                        option.value = tourId;
+                        option.textContent = `${date} Tour`;
+                        tourSelect.appendChild(option);
+                    }
+                });
+                
+                if (Object.keys(matterportTours).length > 0) {
+                    document.querySelector('.virtual-tour').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Select a virtual tour from the dropdown.</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('No valid tours found in the file');
+                }
+            } catch (error) {
+                console.error('Error loading tour links:', error);
+                document.querySelector('.virtual-tour').innerHTML = `
+                    <div class="no-content">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Failed to Load Tours</h3>
+                        <p>${error.message || 'Could not load virtual tours from file'}</p>
+                    </div>
+                `;
+            }
+        }
+
         // Check if file exists
         async function fileExists(filename) {
             try {
@@ -436,19 +543,6 @@
                 return response.ok;
             } catch (error) {
                 console.error(`Error checking ${filename}:`, error);
-                return false;
-            }
-        }
-
-        // Check if URL exists
-        async function urlExists(url) {
-            try {
-                const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                return true;
-            } catch (error) {
-                if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-                    return true;
-                }
                 return false;
             }
         }
@@ -464,13 +558,20 @@
         }
 
         // Load virtual tour
-        async function loadVirtualTour(url) {
+        async function loadVirtualTour(tourId) {
             try {
-                if (url) {
+                const tour = matterportTours[tourId];
+                if (tour) {
                     const virtualTourContainer = document.querySelector('.virtual-tour');
-                    virtualTourContainer.innerHTML = `<iframe src="${url}" />`;
+                    virtualTourContainer.innerHTML = `
+                        <iframe src="${tour.url}" allow="xr-spatial-tracking" allowfullscreen></iframe>
+                        <div class="tour-info">
+                            <div><strong>${tour.title}</strong></div>
+                            <div>${tour.date}</div>
+                        </div>
+                    `;
                 } else {
-                    throw new Error('No tour URL provided');
+                    throw new Error('Tour not found');
                 }
             } catch (error) {
                 document.querySelector('.virtual-tour').innerHTML = `
@@ -485,36 +586,43 @@
 
         // Download file function
         function downloadFile(filename) {
-            // Create a temporary link to trigger download
             const link = document.createElement('a');
             link.href = filename;
-            link.download = filename;
+            link.download = filename.split('/').pop();
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // Upload file function
-        function uploadFile(fileInput, fileType) {
+        // Handle file upload
+        function handleFileUpload() {
+            const fileInput = document.getElementById('upload-file-input');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                showNotification(`Uploading ${file.name} as ${fileType} file...`);
-                // In a real implementation, you would handle the file upload here
-                // For now, we'll just simulate a successful upload
+                const fileName = file.name;
+                
+                // In a real implementation, you would upload to the server here
+                // For this demo, we'll simulate the upload process
+                
+                showNotification(`Uploading ${fileName} to ${currentUploadFolder} folder...`);
+                
+                // Simulate upload delay
                 setTimeout(() => {
-                    showNotification(`Successfully uploaded ${file.name}`);
+                    showNotification(`Successfully uploaded ${fileName} to ${currentUploadFolder} folder`);
+                    document.getElementById('upload-modal').style.display = 'none';
+                    
+                    // In a real implementation, you would refresh the file list or update the UI
                 }, 1500);
             }
         }
 
-        // NEW: Initialize Dropdowns and new navigation
+        // Initialize Dropdowns and new navigation
         function initNewNavigation() {
             // Initialize dropdown menus
             const dropdowns = document.getElementsByClassName("dropdown");
             for (let i = 0; i < dropdowns.length; i++) {
                 dropdowns[i].addEventListener("click", function(e) {
                     this.classList.toggle("active");
-                    // Close other dropdowns when one is opened
                     for (let j = 0; j < dropdowns.length; j++) {
                         if (dropdowns[j] != this) {
                             dropdowns[j].classList.remove("active");
@@ -523,6 +631,7 @@
                     e.stopPropagation();
                 });
             }
+            
             // Close dropdowns if user clicks outside
             window.onclick = function() {
                 for (let i = 0; i < dropdowns.length; i++) {
@@ -541,12 +650,23 @@
                     const parentDropdown = this.closest('.dropdown');
                     const dropdownBtn = parentDropdown.querySelector('.dropdown-btn');
                     const section = dropdownBtn.textContent.trim();
+                    
+                    // Determine the folder for uploads
+                    if (allowUpload) {
+                        if (file.includes('reference/')) {
+                            currentUploadFolder = 'reference';
+                        } else if (file.includes('as_built/')) {
+                            currentUploadFolder = 'as_built';
+                        } else if (file.includes('reports/')) {
+                            currentUploadFolder = 'reports';
+                        }
+                    }
 
                     if (allowUpload) {
-                        // For Reference section, show upload option
-                        loadFile(file, type, file.split('/').pop(), section, true);
+                        // Show upload modal for reference files
+                        document.getElementById('upload-folder-name').textContent = currentUploadFolder;
+                        document.getElementById('upload-modal').style.display = 'flex';
                     } else {
-                        // For As-built and Reports sections, show download option
                         loadFile(file, type, file.split('/').pop(), section, false);
                     }
                 });
@@ -555,11 +675,20 @@
             // Handle virtual tour selection
             document.getElementById('tour-select').addEventListener('change', function() {
                 const selectedTour = this.value;
-                loadVirtualTour(selectedTour);
+                if (selectedTour) {
+                    loadVirtualTour(selectedTour);
+                } else {
+                    document.querySelector('.virtual-tour').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Select a virtual tour from the dropdown.</p>
+                        </div>
+                    `;
+                }
             });
         }
 
-        // MODIFIED loadFile function (simplified from your original code)
+        // Load file function
         function loadFile(filePath, type, fileName = 'File', section, showUpload = false) {
             noContent.style.display = 'none';
             viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading file...</p></div>';
@@ -574,11 +703,10 @@
                             <p>The file "${filePath}" does not exist on the server.</p>
                     `;
                     
-                    // Add appropriate action button based on section
                     if (showUpload) {
                         contentHTML += `
                             <div class="action-buttons">
-                                <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                                <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
                                     <i class="fas fa-upload"></i> Upload File
                                 </button>
                             </div>
@@ -598,7 +726,6 @@
                     return;
                 }
 
-                // Load based on file type
                 if (type === 'pdf') {
                     viewer.innerHTML = `
                         <div style="display: flex; flex-direction: column; height: 100%;">
@@ -615,11 +742,10 @@
                         </div>
                     `;
                     
-                    // Add action buttons at the bottom
                     let actionButtonsHTML = `<div class="action-buttons">`;
                     if (showUpload) {
                         actionButtonsHTML += `
-                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
                                 <i class="fas fa-upload"></i> Upload New Version
                             </button>
                         `;
@@ -649,11 +775,10 @@
                         </div>
                     `;
                     
-                    // Add action buttons at the bottom
                     let actionButtonsHTML = `<div class="action-buttons">`;
                     if (showUpload) {
                         actionButtonsHTML += `
-                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
                                 <i class="fas fa-upload"></i> Upload New Version
                             </button>
                         `;
@@ -665,20 +790,19 @@
                     </div>`;
                     
                     viewer.innerHTML += actionButtonsHTML;
-                    initIFCViewer(); // Your existing IFC viewer function
+                    initIFCViewer();
                 } else {
                     viewer.innerHTML = `
                         <div style="padding: 20px; text-align: center;">
                             <i class="fas fa-cogs" style="font-size: 48px; color: #bdc3c7; margin-bottom: 20px;"></i>
                             <h3>Feature in Development</h3>
-                            <p>The ${type} viewer for <strong>${file}</strong> will be implemented in the next phase.</p>
+                            <p>The ${type} viewer for <strong>${filePath}</strong> will be implemented in the next phase.</p>
                     `;
                     
-                    // Add appropriate action button
                     let actionButtonsHTML = `<div class="action-buttons">`;
                     if (showUpload) {
                         actionButtonsHTML += `
-                            <button class="upload-btn" onclick="document.getElementById('file-upload').click()">
+                            <button class="upload-btn" onclick="showUploadModal('${filePath.split('/')[0]}')">
                                 <i class="fas fa-upload"></i> Upload File
                             </button>
                         `;
@@ -694,19 +818,23 @@
             });
         }
 
-        // Your existing IFC.js Viewer Initialization function
+        // Show upload modal
+        function showUploadModal(folder) {
+            currentUploadFolder = folder;
+            document.getElementById('upload-folder-name').textContent = folder;
+            document.getElementById('upload-modal').style.display = 'flex';
+        }
+
+        // IFC.js Viewer Initialization function
         async function initIFCViewer() {
             try {
-                // Check if IFC.js is available
                 if (typeof WebIFC === 'undefined') {
                     throw new Error("IFC.js library not loaded");
                 }
                 
-                // Set up the IFC viewer
                 const canvas = document.getElementById('ifc-canvas');
                 const container = document.getElementById('viewer-container');
                 
-                // Set canvas size
                 function resizeCanvas() {
                     canvas.width = container.clientWidth;
                     canvas.height = container.clientHeight;
@@ -715,20 +843,15 @@
                 window.addEventListener('resize', resizeCanvas);
                 resizeCanvas();
                 
-                // Draw a simple representation of a building
                 const ctx = canvas.getContext('2d');
-                
-                // Draw a building-like structure
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
                 const width = 300;
                 const height = 200;
                 
-                // Base
                 ctx.fillStyle = '#95a5a6';
                 ctx.fillRect(centerX - width/2, centerY - height/2, width, height);
                 
-                // Windows
                 ctx.fillStyle = '#3498db';
                 for (let i = 0; i < 5; i++) {
                     for (let j = 0; j < 3; j++) {
@@ -740,7 +863,6 @@
                     }
                 }
                 
-                // Roof
                 ctx.fillStyle = '#e74c3c';
                 ctx.beginPath();
                 ctx.moveTo(centerX - width/2 - 20, centerY - height/2);
@@ -749,7 +871,6 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                // Text
                 ctx.fillStyle = '#2c3e50';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
@@ -772,27 +893,21 @@
 
         // Initialize the dashboard when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            initNewNavigation(); // Initialize the new dropdown navigation
+            initNewNavigation();
             document.getElementById('current-date').textContent = new Date().toLocaleDateString();
             
-            // Set up file upload handler
-            document.getElementById('file-upload').addEventListener('change', function() {
-                const file = this.files[0];
-                if (file) {
-                    const fileExtension = file.name.split('.').pop().toLowerCase();
-                    let fileType = 'unknown';
-                    
-                    if (fileExtension === 'pdf') fileType = 'pdf';
-                    else if (fileExtension === 'ifc') fileType = 'ifc';
-                    else if (fileExtension === 'csv') fileType = 'googlesheet';
-                    
-                    uploadFile(this, fileType);
+            // Load tour links from file
+            loadTourLinks();
+            
+            // Close modal if clicked outside
+            document.getElementById('upload-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
                 }
             });
         });
     </script>
 
-    <!-- Load IFC.js library -->
     <script src="https://cdn.jsdelivr.net/npm/web-ifc@0.0.43/webifc.js"></script>
 </body>
 </html>
