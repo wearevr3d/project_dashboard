@@ -27,7 +27,7 @@
             color: white;
             padding: 12px 20px;
             display: flex;
-            justify-content: space-between;
+            justify-content: between;
             align-items: center;
         }
 
@@ -754,8 +754,7 @@
 
         // Load file function
         function loadFile(filePath, type, fileName = 'File', section, showUpload = false, isTourSpecific = false) {
-            // Hide the default GIF and show loading state
-            document.querySelector('.default-gif').style.display = 'none';
+            // Show loading state
             viewer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading file...</p></div>';
 
             // Store information about the currently viewed file
