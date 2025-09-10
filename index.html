@@ -85,6 +85,7 @@
         .panel {
             height: 100%;
             overflow: hidden;
+            transition: all 0.3s ease;
         }
 
         .left-panel {
@@ -94,16 +95,49 @@
             flex-direction: column;
         }
 
+        .left-panel.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            flex: none;
+        }
+
         .panel-header {
             background: #34495e;
             color: white;
             padding: 10px 15px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-header-left {
+            display: flex;
+            align-items: center;
         }
 
         .panel-icon {
             margin-right: 8px;
+        }
+
+        .fullscreen-toggle {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .fullscreen-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .virtual-tour {
@@ -423,6 +457,10 @@
             margin-left: 8px;
             font-style: italic;
         }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -440,11 +478,16 @@
     <div class="container">
         <div class="panel left-panel">
             <div class="panel-header">
-                <i class="fas fa-vr-cardboard panel-icon"></i>
-                <span>Virtual Tour</span>
-                <select id="tour-select">
-                    <option value="">-- Select a Tour --</option>
-                </select>
+                <div class="panel-header-left">
+                    <i class="fas fa-vr-cardboard panel-icon"></i>
+                    <span>Virtual Tour</span>
+                    <select id="tour-select">
+                        <option value="">-- Select a Tour --</option>
+                    </select>
+                </div>
+                <button class="fullscreen-toggle" id="fullscreen-toggle">
+                    <i class="fas fa-expand"></i>
+                </button>
             </div>
             <div class="virtual-tour">
                 <div class="loading">
@@ -540,11 +583,14 @@
         let currentUploadFolder = '';
         let currentTourId = '';
         let currentFile = null; // Tracks the currently viewed file
+        let isFullScreen = false;
 
         // Resizable divider functionality
         const divider = document.querySelector('.divider');
         const leftPanel = document.querySelector('.left-panel');
+        const rightPanel = document.querySelector('.right-panel');
         const container = document.querySelector('.container');
+        const fullscreenToggle = document.getElementById('fullscreen-toggle');
         let isResizing = false;
 
         divider.addEventListener('mousedown', function(e) {
@@ -554,7 +600,7 @@
         });
 
         function handleResize(e) {
-            if (!isResizing) return;
+            if (!isResizing || isFullScreen) return;
             
             const containerRect = container.getBoundingClientRect();
             const percent = (e.clientX - containerRect.left) / containerRect.width * 100;
@@ -565,6 +611,31 @@
             isResizing = false;
             document.removeEventListener('mousemove', handleResize);
             document.removeEventListener('mouseup', stopResize);
+        }
+
+        // Fullscreen toggle functionality
+        fullscreenToggle.addEventListener('click', function() {
+            toggleFullScreen();
+        });
+
+        function toggleFullScreen() {
+            isFullScreen = !isFullScreen;
+            
+            if (isFullScreen) {
+                // Enter fullscreen
+                leftPanel.classList.add('fullscreen');
+                divider.classList.add('hidden');
+                rightPanel.classList.add('hidden');
+                fullscreenToggle.innerHTML = '<i class="fas fa-compress"></i>';
+                showNotification("Virtual tour expanded to full screen. Click the button again to return to split view.");
+            } else {
+                // Exit fullscreen
+                leftPanel.classList.remove('fullscreen');
+                divider.classList.remove('hidden');
+                rightPanel.classList.remove('hidden');
+                fullscreenToggle.innerHTML = '<i class="fas fa-expand"></i>';
+                showNotification("Returned to split view.");
+            }
         }
 
         // File checking and viewer functionality
